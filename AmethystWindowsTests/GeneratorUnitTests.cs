@@ -1,4 +1,5 @@
 using AmethystWindows.DesktopWindowsManager;
+using AmethystWindows.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,7 +10,7 @@ namespace AmethystWindowsTests
 {
     public class GeneratorUnitTests
     {
-        DesktopWindowsManager desktopWindowsManager = new DesktopWindowsManager();
+        TheDesktopWindowsManager desktopWindowsManager = new TheDesktopWindowsManager(null, null, null);
         Layout layout;
 
         [Fact]
