@@ -1,5 +1,4 @@
-﻿using AmethystWindows.DesktopWindowsManager;
-using AmethystWindows.Models;
+﻿using AmethystWindows.Models;
 using AmethystWindows.Models.Enums;
 using Serilog;
 using System;
@@ -23,11 +22,11 @@ namespace AmethystWindows.Services
     public class HotkeyService : IHotkeyService
     {
         private readonly ILogger _logger;
-        private readonly DesktopWindowsManager.DesktopWindowsManager _desktopWindowsManager;
+        private readonly DesktopService _desktopWindowsManager;
         private readonly MainWindowViewModel _mainWindowViewModel;
         private readonly HWND _windowHandler;
 
-        public HotkeyService(ILogger logger, DesktopWindowsManager.DesktopWindowsManager desktopWindowsManager, MainWindow mainWindow, MainWindowViewModel mainWindowViewModel)
+        public HotkeyService(ILogger logger, DesktopService desktopWindowsManager, MainWindow mainWindow, MainWindowViewModel mainWindowViewModel)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _desktopWindowsManager = desktopWindowsManager ?? throw new ArgumentNullException(nameof(desktopWindowsManager));
@@ -106,6 +105,7 @@ namespace AmethystWindows.Services
             var hookAll = SetWinEventHook(EventConstants.EVENT_MIN, EventConstants.EVENT_MAX, HINSTANCE.NULL, winEventHookAll, 0, 0, WINEVENT.WINEVENT_OUTOFCONTEXT | WINEVENT.WINEVENT_SKIPOWNPROCESS);
         }
 
+        // TODO after set to none the hotkey is still triggering the old behavior
         public void RegisterHotkeys()
         {
             var hotkeys = _mainWindowViewModel.Hotkeys;

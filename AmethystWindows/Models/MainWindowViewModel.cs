@@ -1,5 +1,4 @@
 ﻿using AmethystWindows.DependencyInjection;
-using AmethystWindows.DesktopWindowsManager;
 using AmethystWindows.Models.Configuration;
 using AmethystWindows.Services;
 using AmethystWindows.Settings;
@@ -114,7 +113,7 @@ namespace AmethystWindows.Models
         private void Redraw()
         {
             // DWM is a circular dependency, let's think how to simplify this shit
-            var dwm = IocProvider.GetService<DesktopWindowsManager.DesktopWindowsManager>();
+            var dwm = IocProvider.GetService<DesktopService>();
             dwm.Redraw();
         }
 
@@ -316,7 +315,7 @@ namespace AmethystWindows.Models
         public void UpdateWindows()
         {
             // TODO use DI to get DWM
-            var dwm = IocProvider.GetService<DesktopWindowsManager.DesktopWindowsManager>();
+            var dwm = IocProvider.GetService<DesktopService>();
 
             List<DesktopWindow> desktopWindows = dwm.GetWindowsByVirtualDesktop(VirtualDesktop.Current);
             List<ViewModelDesktopWindow> windowsForComparison = desktopWindows.Select(window => new ViewModelDesktopWindow(
@@ -334,7 +333,7 @@ namespace AmethystWindows.Models
         public void UpdateExcludedWindows()
         {
             // TODO use DI to get DWM
-            var dwm = IocProvider.GetService<DesktopWindowsManager.DesktopWindowsManager>();
+            var dwm = IocProvider.GetService<DesktopService>();
 
             List<ViewModelDesktopWindow> windowsForComparison = dwm.ExcludedWindows.Select(window => new ViewModelDesktopWindow(
                 window.AppName,

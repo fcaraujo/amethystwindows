@@ -2,7 +2,7 @@
 {
     public class FiltersOptions
     {
-        public string AppName { get; set; }
-        public string ClassName { get; set; }
+        public string? AppName { get; set; }
+        public string? ClassName { get; set; }
     }
 }

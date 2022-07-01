@@ -1,5 +1,4 @@
-﻿using AmethystWindows.DesktopWindowsManager;
-using AmethystWindows.Models.Enums;
+﻿using AmethystWindows.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

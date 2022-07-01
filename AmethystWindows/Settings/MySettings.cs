@@ -1,5 +1,5 @@
-﻿using AmethystWindows.DesktopWindowsManager;
-using AmethystWindows.Models;
+﻿using AmethystWindows.Models;
+using AmethystWindows.Models.Converters;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 

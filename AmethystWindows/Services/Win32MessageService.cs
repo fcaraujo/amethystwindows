@@ -1,5 +1,4 @@
-﻿using AmethystWindows.DesktopWindowsManager;
-using AmethystWindows.Models;
+﻿using AmethystWindows.Models;
 using AmethystWindows.Models.Enums;
 using Serilog;
 using System;
@@ -15,11 +14,11 @@ namespace AmethystWindows.Services
 
     public class Win32MessageService : IWin32MessageService
     {
-        private readonly DesktopWindowsManager.DesktopWindowsManager _desktopWindowsManager;
+        private readonly DesktopService _desktopWindowsManager;
         private readonly ILogger _logger;
         private readonly MainWindowViewModel _mainWindowViewModel;
 
-        public Win32MessageService(DesktopWindowsManager.DesktopWindowsManager desktopWindowsManager, ILogger logger, MainWindowViewModel mainWindowViewModel)
+        public Win32MessageService(DesktopService desktopWindowsManager, ILogger logger, MainWindowViewModel mainWindowViewModel)
         {
             _desktopWindowsManager = desktopWindowsManager ?? throw new ArgumentNullException(nameof(desktopWindowsManager));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

@@ -2,7 +2,7 @@
 {
     public class HotkeyOptions
     {
-        public string Command { get; set; }
-        public string Keys { get; set; }
+        public string? Command { get; set; }
+        public string? Keys { get; set; }
     }
 }

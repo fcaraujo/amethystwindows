@@ -69,7 +69,7 @@ namespace AmethystWindows
             services.AddTransient<ILogger>(x => logger);
             services.AddSingleton<MainWindow>();
             services.AddSingleton<MainWindowViewModel>();
-            services.AddSingleton<DesktopWindowsManager>();
+            services.AddSingleton<DesktopService>();
             services.AddSingleton<HotkeyService>();
 
             return services;
@@ -88,10 +88,11 @@ namespace AmethystWindows
 
             VirtualDesktop.CurrentChanged += OnVirtualDesktopIsChangedHandler;
 
-            var desktopWindowsManager = _serviceProvider.GetService<DesktopWindowsManager>();
             var hotkeyService = _serviceProvider.GetService<HotkeyService>();
             hotkeyService?.SetWindowsHook();
             hotkeyService?.RegisterHotkeys();
+
+            var desktopWindowsManager = _serviceProvider.GetService<DesktopService>();
             desktopWindowsManager?.CollectWindows();
 
             InitVirtualDesktops();
@@ -126,7 +127,7 @@ namespace AmethystWindows
 
         private void OnVirtualDesktopIsChangedHandler(object sender, VirtualDesktopChangedEventArgs e)
         {
-            var _desktopWindowsManager = _serviceProvider.GetService<DesktopWindowsManager>();
+            var _desktopWindowsManager = _serviceProvider.GetService<DesktopService>() ?? throw new ArgumentNullException(nameof(DesktopService));
             _desktopWindowsManager.CollectWindows();
             _desktopWindowsManager.Draw();
         }

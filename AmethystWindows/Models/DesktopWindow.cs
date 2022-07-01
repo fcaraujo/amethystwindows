@@ -7,7 +7,7 @@ using System.Text;
 using Vanara.PInvoke;
 using WindowsDesktop;
 
-namespace AmethystWindows.DesktopWindowsManager
+namespace AmethystWindows.Models
 {
     public class DesktopWindow
     {

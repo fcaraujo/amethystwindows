@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using Vanara.PInvoke;
 using WindowsDesktop;
 
-namespace AmethystWindows.DesktopWindowsManager
+namespace AmethystWindows.Models.Converters
 {
     public class DesktopMonitorsConverter : JsonConverter
     {

@@ -1,4 +1,5 @@
-﻿using AmethystWindows.Models;
+﻿using System;
+using AmethystWindows.Models;
 
 namespace AmethystWindows.DependencyInjection
 {
@@ -11,7 +12,7 @@ namespace AmethystWindows.DependencyInjection
         {
             get
             {
-                return IocProvider.GetService<MainWindowViewModel>();
+                return IocProvider.GetService<MainWindowViewModel>() ?? throw new ArgumentNullException(nameof(MainWindowViewModel));
             }
         }
     }

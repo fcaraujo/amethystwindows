@@ -1,5 +1,5 @@
-using AmethystWindows.DesktopWindowsManager;
 using AmethystWindows.Models.Enums;
+using AmethystWindows.Services;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -10,7 +10,8 @@ namespace AmethystWindowsTests
 {
     public class GeneratorUnitTests
     {
-        DesktopWindowsManager desktopWindowsManager = new DesktopWindowsManager(null, null, null);
+        // TODO mock/inject + test properly
+        private readonly DesktopService desktopWindowsManager = new DesktopService(null, null, null);
         Layout layout;
 
         [Fact]

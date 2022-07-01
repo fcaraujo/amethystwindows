@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace AmethystWindows.DesktopWindowsManager
+namespace AmethystWindows.Models
 {
     // Check where/why we need this struct instead of Dictionary....?!
     public struct Pair<K, V>
