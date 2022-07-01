@@ -1,64 +1,18 @@
-﻿using Newtonsoft.Json;
+﻿using AmethystWindows.Models;
+using AmethystWindows.Models.Enums;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Vanara.PInvoke;
 using WindowsDesktop;
 
 namespace AmethystWindows.DesktopWindowsManager
 {
-    public enum Layout : ushort
-    {
-        Horizontal = 0,
-        Vertical = 1,
-        HorizGrid = 2,
-        VertGrid = 3,
-        Monocle = 4,
-        Wide = 5,
-        Tall = 6
-    }
-
-    public struct Pair<K, V>
-    {
-        public K Key { get; set; }
-        public V Value { get; set; }
-
-        public Pair(K key, V value)
-        {
-            Key = key;
-            Value = value;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is Pair<K, V> pair &&
-                   EqualityComparer<K>.Default.Equals(Key, pair.Key) &&
-                   EqualityComparer<V>.Default.Equals(Value, pair.Value);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = -1030903623;
-            hashCode = hashCode * -1521134295 + EqualityComparer<K>.Default.GetHashCode(Key);
-            hashCode = hashCode * -1521134295 + EqualityComparer<V>.Default.GetHashCode(Value);
-            return hashCode;
-        }
-
-        public override string ToString()
-        {
-            return base.ToString();
-        }
-    }
-
     public class DesktopMonitorsConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType) => objectType == typeof(List<ViewModelDesktopMonitor>);
@@ -112,7 +66,8 @@ namespace AmethystWindows.DesktopWindowsManager
                     HMONITOR savedMonitor = monitor;
 
                     list.Add(new ViewModelDesktopMonitor(monitor, savedDesktop, factor, layout));
-                } catch
+                }
+                catch
                 {
                     Debug.WriteLine("WARNING: something was wrong in reloading your settings. Most probably monitor or virtual desktop do not exist anymore.");
                 }

@@ -1,29 +1,31 @@
-﻿using Newtonsoft.Json;
+﻿using AmethystWindows.Models;
+using AmethystWindows.Services;
+using AmethystWindows.Settings;
+using DebounceThrottle;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Vanara.PInvoke;
 using WindowsDesktop;
-
-using AmethystWindows.Settings;
-using DebounceThrottle;
-using System.Diagnostics;
-using System.Windows.Interop;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("AmethystWindowsTests")]
 namespace AmethystWindows.DesktopWindowsManager
 {
-    partial class DesktopWindowsManager
+    public partial class DesktopWindowsManager
     {
+        private readonly ILogger _logger;
+        private readonly ISettingsService _settingsService;
+
+        // TODO turn this private and restrict its access?
+        public readonly MainWindowViewModel _mainWindowViewModel;
+
         public Dictionary<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> Windows { get; }
         public Dictionary<Pair<VirtualDesktop, HMONITOR>, bool> WindowsSubscribed = new Dictionary<Pair<VirtualDesktop, HMONITOR>, bool>();
 
         public ObservableCollection<DesktopWindow> ExcludedWindows { get; }
-
-        public MainWindowViewModel mainWindowViewModel = App.Current != null ? App.Current.MainWindow.DataContext as MainWindowViewModel : new MainWindowViewModel();
 
         private DebounceDispatcher debounceDispatcher = new DebounceDispatcher(100);
 
@@ -71,69 +73,79 @@ namespace AmethystWindows.DesktopWindowsManager
             "Hotkeys",
         };
 
-        public DesktopWindowsManager()
+        public DesktopWindowsManager(ILogger logger, ISettingsService settingsService, MainWindowViewModel amainWindowViewModel)
         {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+            _mainWindowViewModel = amainWindowViewModel ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
+
             Windows = new Dictionary<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>();
             ExcludedWindows = new ObservableCollection<DesktopWindow>();
 
             ExcludedWindows.CollectionChanged += ExcludedWindows_CollectionChanged;
-            mainWindowViewModel.PropertyChanged += MainWindowViewModel_PropertyChanged;
+            _mainWindowViewModel.PropertyChanged += MainWindowViewModel_PropertyChanged;
         }
 
         private void ExcludedWindows_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            if (!App.Current.MainWindow.Equals(null))
+            if (!System.Windows.Application.Current.MainWindow.Equals(null))
             {
-                mainWindowViewModel.UpdateExcludedWindows();
+                _mainWindowViewModel.UpdateExcludedWindows();
             }
         }
 
         private void MainWindowViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            Debug.WriteLine($"ModelViewChanged: {e.PropertyName}");
+            _logger.Debug($"ModelViewChanged: {e.PropertyName}");
+
             if (e.PropertyName == "VirtualDesktops")
             {
+                // TODO check how to use DI here...?
                 App.InitVirtualDesktops();
             }
 
-            if (e.PropertyName == "Hotkeys")
-            {
-                HWND mainWindowHandle = new WindowInteropHelper(App.Current.MainWindow).Handle;
-                App.hooks.unsetKeyboardHook(mainWindowHandle);
-                App.hooks.setKeyboardHook(mainWindowHandle, mainWindowViewModel.Hotkeys);
-            }
+            // TODO check if saving hotkeys on the event is enough
+            //if (e.PropertyName == "Hotkeys")
+            //{
+            //    // TODO add dependency of HooksService in this class retrieve it
+            //    var _hooksService = IocProvider.GetService<HooksService>();
+            //    _hooksService.ClearHotkeys();
+            //    _hooksService.SetKeyboardHook();
+
+            //    _settingsService.SetHotkeyOptions(mainWindowViewModel);
+            //    _settingsService.Save();
+            //}
+
             if (ModelViewPropertiesSaveSettings.Contains(e.PropertyName))
             {
-                MySettings.Instance.LayoutPadding = mainWindowViewModel.LayoutPadding;
-                MySettings.Instance.Padding = mainWindowViewModel.Padding;
+                // TODO handle
+                MySettings.Instance.Filters = _mainWindowViewModel.ConfigurableFilters;
+                MySettings.Instance.Additions = _mainWindowViewModel.ConfigurableAdditions;
+                MySettings.Instance.DesktopMonitors = _mainWindowViewModel.DesktopMonitors.ToList();
 
-                MySettings.Instance.MarginTop = mainWindowViewModel.MarginTop;
-                MySettings.Instance.MarginRight = mainWindowViewModel.MarginRight;
-                MySettings.Instance.MarginBottom = mainWindowViewModel.MarginBottom;
-                MySettings.Instance.MarginLeft = mainWindowViewModel.MarginLeft;
-
-                MySettings.Instance.VirtualDesktops = mainWindowViewModel.VirtualDesktops;
-
-                MySettings.Instance.Filters = mainWindowViewModel.ConfigurableFilters;
-                MySettings.Instance.Additions = mainWindowViewModel.ConfigurableAdditions;
-                MySettings.Instance.DesktopMonitors = mainWindowViewModel.DesktopMonitors.ToList();
-                MySettings.Instance.Hotkeys = mainWindowViewModel.Hotkeys.ToList();
-                
                 MySettings.Save();
+
+
+                _settingsService.SetSettingsOptions(_mainWindowViewModel);
+
+                // TODO check it's been called every layout rotation?
+                _settingsService.Save();
             }
+
             if (e.PropertyName == "ConfigurableFilters" || e.PropertyName == "ConfigurableAdditions")
             {
                 ClearWindows();
                 CollectWindows();
             }
+
             if (ModelViewPropertiesDraw.Contains(e.PropertyName))
             {
-                if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) && mainWindowViewModel.LastChangedDesktopMonitor.Key != null) debounceDispatcher.Debounce(() => Draw(mainWindowViewModel.LastChangedDesktopMonitor));
+                if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) && _mainWindowViewModel.LastChangedDesktopMonitor.Key != null) debounceDispatcher.Debounce(() => Draw(_mainWindowViewModel.LastChangedDesktopMonitor));
                 else debounceDispatcher.Debounce(() => Draw());
             }
         }
 
-        public void RotateMonitorClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
+        private void RotateMonitorClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
         {
             List<HMONITOR> virtualDesktopMonitors = Windows
                 .Keys
@@ -147,7 +159,7 @@ namespace AmethystWindows.DesktopWindowsManager
             User32.SetForegroundWindow(Windows[nextDesktopMonitor].FirstOrDefault().Window);
         }
 
-        public void RotateMonitorCounterClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
+        private void RotateMonitorCounterClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
         {
             List<HMONITOR> virtualDesktopMonitors = Windows
                 .Keys
@@ -163,8 +175,10 @@ namespace AmethystWindows.DesktopWindowsManager
 
         private void SubscribeWindowsCollectionChanged(Pair<VirtualDesktop, HMONITOR> desktopMonitor, bool enabled)
         {
-            if (!enabled) Windows[desktopMonitor].CollectionChanged -= Windows_CollectionChanged;
-            else if (!WindowsSubscribed[desktopMonitor]) Windows[desktopMonitor].CollectionChanged += Windows_CollectionChanged;
+            if (!enabled)
+                Windows[desktopMonitor].CollectionChanged -= Windows_CollectionChanged;
+            else if (!WindowsSubscribed[desktopMonitor])
+                Windows[desktopMonitor].CollectionChanged += Windows_CollectionChanged;
 
             WindowsSubscribed[desktopMonitor] = enabled;
         }

@@ -3,11 +3,10 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Forms;
 using Application = System.Windows.Application;
 
-namespace AmethystWindows
+namespace AmethystWindows.Models
 {
     public class NotifyIconWrapper : FrameworkElement, IDisposable
     {

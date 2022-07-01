@@ -2,11 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.modernwpf.com/2019"
-             xmlns:local="clr-namespace:AmethystWindows"
-             StartupUri="MainWindow.xaml"
-             Activated="App_Activated">
+             xmlns:local="clr-namespace:AmethystWindows.DependencyInjection">
     <Application.Resources>
         <ResourceDictionary>
+            <local:ViewModelProvider x:Key="ViewModelProvider"/>
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemeResources />
                 <ui:XamlControlsResources />

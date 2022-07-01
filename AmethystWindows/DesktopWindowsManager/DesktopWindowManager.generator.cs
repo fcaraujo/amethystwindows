@@ -1,10 +1,7 @@
-﻿using System;
+﻿using AmethystWindows.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
-using Vanara.PInvoke;
-using WindowsDesktop;
-
-using AmethystWindows.Settings;
 
 namespace AmethystWindows.DesktopWindowsManager
 {
@@ -162,8 +159,8 @@ namespace AmethystWindows.DesktopWindowsManager
                             int lastPaddingI = windowsCount == 1 ? 0 : layoutPadding;
                             int lastPaddingJ = i == (windowsCount - 2) ? 0 : layoutPadding;
 
-                            if (i == 0) yield return new Rectangle(0, 0, mWidth, mHeight / 2 + factor * mainWindowViewModel.Step - (lastPaddingI /2));
-                            yield return new Rectangle(i * size, mHeight / 2 + factor * mainWindowViewModel.Step + (lastPaddingI / 2), size - lastPaddingJ, mHeight / 2 - factor * mainWindowViewModel.Step - (lastPaddingI /2));
+                            if (i == 0) yield return new Rectangle(0, 0, mWidth, mHeight / 2 + factor * _mainWindowViewModel.Step - (lastPaddingI / 2));
+                            yield return new Rectangle(i * size, mHeight / 2 + factor * _mainWindowViewModel.Step + (lastPaddingI / 2), size - lastPaddingJ, mHeight / 2 - factor * _mainWindowViewModel.Step - (lastPaddingI / 2));
                         }
                     }
                     break;
@@ -177,8 +174,8 @@ namespace AmethystWindows.DesktopWindowsManager
                             int lastPaddingI = i == (windowsCount - 2) ? 0 : layoutPadding;
                             int lastPaddingJ = windowsCount == 1 ? 0 : layoutPadding;
 
-                            if (i == 0) yield return new Rectangle(0, 0, mWidth / 2 + factor * mainWindowViewModel.Step - (lastPaddingJ / 2), mHeight);
-                            yield return new Rectangle(mWidth / 2 + factor * mainWindowViewModel.Step + (lastPaddingJ / 2), i * size, mWidth / 2 - factor * mainWindowViewModel.Step - (lastPaddingJ / 2), size - lastPaddingI);
+                            if (i == 0) yield return new Rectangle(0, 0, mWidth / 2 + factor * _mainWindowViewModel.Step - (lastPaddingJ / 2), mHeight);
+                            yield return new Rectangle(mWidth / 2 + factor * _mainWindowViewModel.Step + (lastPaddingJ / 2), i * size, mWidth / 2 - factor * _mainWindowViewModel.Step - (lastPaddingJ / 2), size - lastPaddingI);
                         }
                     }
                     break;

@@ -10,7 +10,7 @@ namespace AmethystWindowsTests
 {
     public class GeneratorUnitTests
     {
-        TheDesktopWindowsManager desktopWindowsManager = new TheDesktopWindowsManager(null, null, null);
+        DesktopWindowsManager desktopWindowsManager = new DesktopWindowsManager(null, null, null);
         Layout layout;
 
         [Fact]

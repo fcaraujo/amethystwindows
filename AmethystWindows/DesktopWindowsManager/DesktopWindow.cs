@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -57,12 +56,12 @@ namespace AmethystWindows.DesktopWindowsManager
             {
                 return common &&
                     !IsBackgroundAppWindow();
-            } 
+            }
             else
             {
                 return common &&
                     !Info.dwExStyle.HasFlag(User32.WindowStylesEx.WS_EX_TOOLWINDOW);
-            }  
+            }
         }
 
         public bool IsExcluded()
@@ -199,7 +198,8 @@ namespace AmethystWindows.DesktopWindowsManager
                     {
                         FileVersionInfo myFileVersionInfo = FileVersionInfo.GetVersionInfo(fileName);
                         name = myFileVersionInfo.FileDescription;
-                    } catch
+                    }
+                    catch
                     {
                         name = null;
                     }

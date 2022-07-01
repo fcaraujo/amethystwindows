@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AmethystWindows.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -8,11 +9,81 @@ using WindowsDesktop;
 
 namespace AmethystWindows.DesktopWindowsManager
 {
+    // consider public method to be private if the actions are controlled by Dispatch...
+    // TODO extract interface when only public methods are exposed
     partial class DesktopWindowsManager
     {
+        public void Dispatch(CommandHotkey command)
+        {
+            var foregroundWindow = User32.GetForegroundWindow();
+            var currentMonitor = User32.MonitorFromWindow(foregroundWindow, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
+            var currentVirtualDesktop = VirtualDesktop.Current;
+            var currentPair = new Pair<VirtualDesktop, HMONITOR>(currentVirtualDesktop, currentMonitor);
+            var selectedWindow = GetWindowByHandlers(foregroundWindow, currentMonitor, currentVirtualDesktop);
+            var findWindow = FindWindow(foregroundWindow);
+
+            _logger.Debug($"Dispatch {{Command}}", command);
+
+            switch (command)
+            {
+                case CommandHotkey.SetMainPane:
+                    SetMainPane(currentPair, selectedWindow);
+                    break;
+                case CommandHotkey.Redraw:
+                    Redraw();
+                    break;
+                case CommandHotkey.ChangeWindowFocusAntiClockwise:
+                    ChangeWindowFocusAntiClockwise(currentPair, selectedWindow);
+                    break;
+                case CommandHotkey.ChangeWindowFocusClockwise:
+                    ChangeWindowFocusClockwise(currentPair, selectedWindow);
+                    break;
+
+                // TODO check all hotkeys below
+
+                case CommandHotkey.MoveFocusedToSpace1:
+                case CommandHotkey.MoveFocusedToSpace2:
+                case CommandHotkey.MoveFocusedToSpace3:
+                case CommandHotkey.MoveFocusedToSpace4:
+                case CommandHotkey.MoveFocusedToSpace5:
+                    MoveWindowSpecificVirtualDesktop(findWindow, findWindow.VirtualDesktop.Id);
+                    break;
+
+                case CommandHotkey.MoveNextSpace:
+                    MoveWindowNextVirtualDesktop(findWindow);
+                    break;
+                case CommandHotkey.MovePreviousSpace:
+                    MoveWindowPreviousVirtualDesktop(findWindow);
+                    break;
+                case CommandHotkey.SwapFocusedAnticlockwise:
+                    RotateMonitorCounterClockwise(currentPair);
+                    break;
+                case CommandHotkey.SwapFocusedClockwise:
+                    RotateMonitorClockwise(currentPair);
+                    break;
+
+                case CommandHotkey.MoveFocusPreviousScreen:
+                    MoveWindowCounterClockwise(currentPair, selectedWindow);
+                    break;
+                case CommandHotkey.MoveFocusNextScreen:
+                    MoveWindowClockwise(currentPair, selectedWindow);
+                    break;
+                case CommandHotkey.MoveFocusedPreviousScreen:
+                    MoveWindowPreviousScreen(findWindow);
+                    break;
+                case CommandHotkey.MoveFocusedNextScreen:
+                    MoveWindowNextScreen(findWindow);
+                    break;
+
+                case CommandHotkey.None:
+                default:
+                    break;
+            }
+        }
+
         public void AddWindow(DesktopWindow desktopWindow)
         {
-            Pair<string, string> configurableFilter = mainWindowViewModel.ConfigurableFilters.FirstOrDefault(f => f.Key == desktopWindow.AppName);
+            Pair<string, string> configurableFilter = _mainWindowViewModel.ConfigurableFilters.FirstOrDefault(f => f.Key == desktopWindow.AppName);
 
             if (!Windows.ContainsKey(desktopWindow.GetDesktopMonitor()) && !WindowsSubscribed.ContainsKey(desktopWindow.GetDesktopMonitor()))
             {
@@ -21,10 +92,10 @@ namespace AmethystWindows.DesktopWindowsManager
                 SubscribeWindowsCollectionChanged(desktopWindow.GetDesktopMonitor(), true);
             }
 
-            if (FixedFilters.All(s => !desktopWindow.AppName.StartsWith(s)) 
+            if (FixedFilters.All(s => !desktopWindow.AppName.StartsWith(s))
                 && desktopWindow.AppName != String.Empty &&
                 !Windows[desktopWindow.GetDesktopMonitor()].Contains(desktopWindow))
-            { 
+            {
                 if (configurableFilter.Equals(null))
                 {
                     Windows[desktopWindow.GetDesktopMonitor()].Insert(0, desktopWindow);
@@ -50,14 +121,6 @@ namespace AmethystWindows.DesktopWindowsManager
             AddWindow(newDesktopWindow);
         }
 
-        public void ClearWindows()
-        {
-            foreach (var desktopMonitor in Windows)
-            {
-                desktopMonitor.Value.Clear();
-            }
-        }
-
         public List<DesktopWindow> GetWindowsByVirtualDesktop(VirtualDesktop virtualDesktop)
         {
             IEnumerable<Pair<VirtualDesktop, HMONITOR>> desktopMonitorPairs = Windows.Keys.Where(desktopMonitor => desktopMonitor.Key.Equals(virtualDesktop));
@@ -72,7 +135,7 @@ namespace AmethystWindows.DesktopWindowsManager
                 desktopWindow.GetAppName();
                 desktopWindow.GetClassName();
 
-                Pair<string, string> configurableAddition = mainWindowViewModel.ConfigurableAdditions.FirstOrDefault(f => f.Key == desktopWindow.AppName);
+                Pair<string, string> configurableAddition = _mainWindowViewModel.ConfigurableAdditions.FirstOrDefault(f => f.Key == desktopWindow.AppName);
                 bool hasActiveAddition;
                 if (!(configurableAddition.Key == null))
                 {
@@ -103,7 +166,8 @@ namespace AmethystWindows.DesktopWindowsManager
                             );
                         AddWindow(desktopWindow);
                     }
-                } else
+                }
+                else
                 {
                     if (desktopWindow.IsExcluded() && !ExcludedWindows.Contains(desktopWindow) && desktopWindow.AppName != "" && !FixedExcludedFilters.Contains(desktopWindow.AppName)) ExcludedWindows.Add(desktopWindow);
                 }
@@ -122,20 +186,18 @@ namespace AmethystWindows.DesktopWindowsManager
             }
         }
 
-        private void Windows_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        public void Redraw()
         {
-            if (e.Action.Equals(NotifyCollectionChangedAction.Remove))
+            ClearWindows();
+            CollectWindows();
+            Draw();
+        }
+
+        private void ClearWindows()
+        {
+            foreach (var desktopMonitor in Windows)
             {
-                DesktopWindow desktopWindow = (DesktopWindow)e.OldItems[0];
-            }
-            else if (e.Action.Equals(NotifyCollectionChangedAction.Add))
-            {
-                DesktopWindow desktopWindow = (DesktopWindow)e.NewItems[0];
-                if (desktopWindow.GetDesktopMonitor().Key.Equals(null) || desktopWindow.GetDesktopMonitor().Value.Equals(null)) desktopWindow.GetInfo();
-            }
-            if (!App.Current.MainWindow.Equals(null))
-            {
-                mainWindowViewModel.UpdateWindows();
+                desktopMonitor.Value.Clear();
             }
         }
 
@@ -148,21 +210,48 @@ namespace AmethystWindows.DesktopWindowsManager
             }
             return desktopWindows.FirstOrDefault();
         }
-        
-        public DesktopWindow GetWindowByHandlers(HWND hWND, HMONITOR hMONITOR, VirtualDesktop desktop)
+
+        private void Windows_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            return Windows[new Pair<VirtualDesktop, HMONITOR>(desktop, hMONITOR)].First(window => window.Window == hWND);
-        }
-          
-        public void SetMainWindow(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
-        {
-            Windows[desktopMonitor].Move(
-                    Windows[desktopMonitor].IndexOf(window),
-                    0
-                    );
+            if (e.Action.Equals(NotifyCollectionChangedAction.Remove))
+            {
+                DesktopWindow desktopWindow = (DesktopWindow)e.OldItems[0];
+            }
+            else if (e.Action.Equals(NotifyCollectionChangedAction.Add))
+            {
+                DesktopWindow desktopWindow = (DesktopWindow)e.NewItems[0];
+
+                if (desktopWindow.GetDesktopMonitor().Key.Equals(null) || desktopWindow.GetDesktopMonitor().Value.Equals(null))
+                    desktopWindow.GetInfo();
+            }
+            if (!App.Current.MainWindow.Equals(null))
+            {
+                _mainWindowViewModel.UpdateWindows();
+            }
         }
 
-        public void RotateFocusedWindowClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
+        private DesktopWindow GetWindowByHandlers(HWND hWND, HMONITOR hMONITOR, VirtualDesktop desktop)
+        {
+            DesktopWindow? desktopWindow = null;
+            try
+            {
+                desktopWindow = Windows[new Pair<VirtualDesktop, HMONITOR>(desktop, hMONITOR)].First(window => window.Window == hWND);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to GetWindowByHandler");
+            }
+            return desktopWindow;
+        }
+
+        private void SetMainPane(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow selectedWindow)
+        {
+            var windows = Windows[desktopMonitor];
+            var oldIndex = windows.IndexOf(selectedWindow);
+            windows.Move(oldIndex, 0);
+        }
+
+        private void ChangeWindowFocusClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
         {
             int currentIndex = Windows[desktopMonitor].IndexOf(window);
             int maxIndex = Windows[desktopMonitor].Count - 1;
@@ -176,7 +265,7 @@ namespace AmethystWindows.DesktopWindowsManager
             }
         }
 
-        public void RotateFocusedWindowCounterClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
+        private void ChangeWindowFocusAntiClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
         {
             int currentIndex = Windows[desktopMonitor].IndexOf(window);
             int maxIndex = Windows[desktopMonitor].Count - 1;
@@ -190,7 +279,7 @@ namespace AmethystWindows.DesktopWindowsManager
             }
         }
 
-        public void MoveWindowClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
+        private void MoveWindowClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
         {
             int currentIndex = Windows[desktopMonitor].IndexOf(window);
             int maxIndex = Windows[desktopMonitor].Count - 1;
@@ -204,7 +293,7 @@ namespace AmethystWindows.DesktopWindowsManager
             }
         }
 
-        public void MoveWindowCounterClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
+        private void MoveWindowCounterClockwise(Pair<VirtualDesktop, HMONITOR> desktopMonitor, DesktopWindow window)
         {
             int currentIndex = Windows[desktopMonitor].IndexOf(window);
             int maxIndex = Windows[desktopMonitor].Count - 1;
@@ -218,51 +307,53 @@ namespace AmethystWindows.DesktopWindowsManager
             }
         }
 
-        public void MoveWindowNextScreen(DesktopWindow window)
+        private void MoveWindowNextScreen(DesktopWindow window)
         {
+            // TODO Validate - sometimes it crashes?!
             List<Pair<VirtualDesktop, HMONITOR>> desktopMonitors = Windows.Keys.Where(dM => dM.Key.ToString() == VirtualDesktop.Current.ToString()).ToList();
             int currentMonitorIndex = desktopMonitors.IndexOf(window.GetDesktopMonitor());
             int maxIndex = desktopMonitors.Count - 1;
-            mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
+            _mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
             if (currentMonitorIndex == maxIndex)
             {
                 RemoveWindow(window);
-                mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
+                _mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
                 window.MonitorHandle = desktopMonitors[0].Value;
                 AddWindow(window);
             }
             else
             {
                 RemoveWindow(window);
-                mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
+                _mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
                 window.MonitorHandle = desktopMonitors[++currentMonitorIndex].Value;
                 AddWindow(window);
             }
         }
 
-        public void MoveWindowPreviousScreen(DesktopWindow window)
+        private void MoveWindowPreviousScreen(DesktopWindow window)
         {
+            // TODO Validate - sometimes it crashes?!
             List<Pair<VirtualDesktop, HMONITOR>> desktopMonitors = Windows.Keys.Where(dM => dM.Key.ToString() == VirtualDesktop.Current.ToString()).ToList();
             int currentMonitorIndex = desktopMonitors.IndexOf(window.GetDesktopMonitor());
             int maxIndex = desktopMonitors.Count - 1;
-            mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
+            _mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
             if (currentMonitorIndex == 0)
             {
                 RemoveWindow(window);
-                mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
+                _mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
                 window.MonitorHandle = desktopMonitors[maxIndex].Value;
                 AddWindow(window);
             }
             else
             {
                 RemoveWindow(window);
-                mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
+                _mainWindowViewModel.LastChangedDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(null, new HMONITOR());
                 window.MonitorHandle = desktopMonitors[--currentMonitorIndex].Value;
                 AddWindow(window);
             }
         }
 
-        public void MoveWindowNextVirtualDesktop(DesktopWindow window)
+        private void MoveWindowNextVirtualDesktop(DesktopWindow window)
         {
             VirtualDesktop nextVirtualDesktop = window.VirtualDesktop.GetRight();
             if (nextVirtualDesktop != null)
@@ -275,10 +366,10 @@ namespace AmethystWindows.DesktopWindowsManager
             }
         }
 
-        public void MoveWindowPreviousVirtualDesktop(DesktopWindow window)
+        private void MoveWindowPreviousVirtualDesktop(DesktopWindow window)
         {
             VirtualDesktop nextVirtualDesktop = window.VirtualDesktop.GetLeft();
-            if (nextVirtualDesktop != null) 
+            if (nextVirtualDesktop != null)
             {
                 RemoveWindow(window);
                 VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), nextVirtualDesktop);
@@ -288,9 +379,9 @@ namespace AmethystWindows.DesktopWindowsManager
             }
         }
 
-        public void MoveWindowSpecificVirtualDesktop(DesktopWindow window, Guid id)
+        private void MoveWindowSpecificVirtualDesktop(DesktopWindow window, Guid desktopGuid)
         {
-            VirtualDesktop nextVirtualDesktop = VirtualDesktop.FromId(id);
+            var nextVirtualDesktop = VirtualDesktop.FromId(desktopGuid);
             if (nextVirtualDesktop != null)
             {
                 RemoveWindow(window);
