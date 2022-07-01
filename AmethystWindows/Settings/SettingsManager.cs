@@ -14,7 +14,7 @@ namespace AmethystWindows.Settings
 
         private static string GetLocalFilePath(string fileName)
         {
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var companyName = Assembly.GetEntryAssembly().GetCustomAttributes<AssemblyCompanyAttribute>().FirstOrDefault();
             return Path.Combine(appData, companyName?.Company ?? Assembly.GetEntryAssembly().GetName().Name, fileName);
         }
@@ -29,7 +29,7 @@ namespace AmethystWindows.Settings
 
         public static void Save()
         {
-            string json = JsonConvert.SerializeObject(Instance);
+            var json = JsonConvert.SerializeObject(Instance, Formatting.Indented);
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
             File.WriteAllText(filePath, json);
         }
