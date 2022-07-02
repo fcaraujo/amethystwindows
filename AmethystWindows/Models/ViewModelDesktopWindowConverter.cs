@@ -8,7 +8,7 @@ namespace AmethystWindows.Models
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            ViewModelDesktopWindow selectedWindow = value as ViewModelDesktopWindow;
+            var selectedWindow = value as ViewModelDesktopWindow;
 
             if (selectedWindow != null)
             {

@@ -23,8 +23,8 @@ namespace AmethystWindows.Models
         private WindowState _windowState;
         private List<ViewModelDesktopWindow> _windows;
         private List<ViewModelDesktopWindow> _excludedWindows;
-        private ViewModelDesktopWindow _selectedWindow;
-        private ViewModelDesktopWindow _selectedExcludedWindow;
+        private ViewModelDesktopWindow? _selectedWindow;
+        private ViewModelDesktopWindow? _selectedExcludedWindow;
 
         // Settings
         private bool _disabled;
@@ -36,9 +36,10 @@ namespace AmethystWindows.Models
         private int _marginLeft;
         private int _step;
         private int _virtualDesktops;
-        private static ObservableHotkeys _hotkeys;
+
+        private ObservableHotkeys _hotkeys;
         private ICollection<FiltersOptions> _filters;
-        private FiltersOptions _selectedFilter;
+        private FiltersOptions? _selectedFilter;
 
         private List<Pair<string, string>> _configurableFilters;
         private Pair<string, string> _selectedConfigurableFilter;
@@ -47,7 +48,7 @@ namespace AmethystWindows.Models
         private Pair<string, string> _selectedConfigurableAddition;
 
         private Pair<VirtualDesktop, HMONITOR> _lastChangedDesktopMonitor;
-        private static ObservableDesktopMonitors _desktopMonitors;
+        private ObservableDesktopMonitors _desktopMonitors;
 
         private readonly ISettingsService _settingsService;
 
@@ -173,13 +174,13 @@ namespace AmethystWindows.Models
 
         public ViewModelDesktopWindow SelectedWindow
         {
-            get => _selectedWindow;
+            get => _selectedWindow ?? throw new ArgumentNullException(nameof(_selectedWindow));
             set => SetProperty(ref _selectedWindow, value);
         }
 
         public ViewModelDesktopWindow SelectedExcludedWindow
         {
-            get => _selectedExcludedWindow;
+            get => _selectedExcludedWindow ?? throw new ArgumentNullException(nameof(_selectedExcludedWindow));
             set => SetProperty(ref _selectedExcludedWindow, value);
         }
 
@@ -274,7 +275,7 @@ namespace AmethystWindows.Models
 
         public FiltersOptions SelectedFilter
         {
-            get => _selectedFilter;
+            get => _selectedFilter ?? throw new ArgumentNullException(nameof(_selectedFilter));
             set => SetProperty(ref _selectedFilter, value);
         }
 
@@ -326,7 +327,7 @@ namespace AmethystWindows.Models
                 window.Monitor.ToString()
                 )).ToList();
 
-            if (!windowsForComparison.SequenceEqual(Windows)) 
+            if (!windowsForComparison.SequenceEqual(Windows))
                 Windows = windowsForComparison;
         }
 
