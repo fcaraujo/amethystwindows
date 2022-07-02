@@ -18,7 +18,7 @@ namespace AmethystWindows.Models
 {
     public class MainWindowViewModel : ObservableRecipient
     {
-        private NotifyIconWrapper.NotifyRequestRecord? _notifyRequest;
+        private NotifyRequestRecord? _notifyRequest;
         private bool _showInTaskbar;
         private WindowState _windowState;
         private List<ViewModelDesktopWindow> _windows;
@@ -296,7 +296,7 @@ namespace AmethystWindows.Models
             set => SetProperty(ref _selectedConfigurableAddition, value);
         }
 
-        public NotifyIconWrapper.NotifyRequestRecord? NotifyRequest
+        public NotifyRequestRecord? NotifyRequest
         {
             get => _notifyRequest;
             set => SetProperty(ref _notifyRequest, value);
@@ -304,7 +304,7 @@ namespace AmethystWindows.Models
 
         public void Notify(string text, string title, int duration)
         {
-            NotifyRequest = new NotifyIconWrapper.NotifyRequestRecord
+            NotifyRequest = new NotifyRequestRecord
             {
                 Title = title,
                 Text = text,

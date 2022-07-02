@@ -693,7 +693,9 @@ namespace AmethystWindows.Services
             {
                 desktopWindows.AddRange(Windows[new Pair<VirtualDesktop, HMONITOR>(desktopMonitor.Key.Key, desktopMonitor.Key.Value)].Where(window => window.Window == hWND));
             }
-            var window = desktopWindows.FirstOrDefault() ?? throw new ArgumentNullException(nameof(DesktopWindow));
+
+            // TODO check how to handle null pointer
+            var window = desktopWindows.FirstOrDefault();
             return window;
         }
 

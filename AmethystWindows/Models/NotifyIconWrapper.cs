@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AmethystWindows.DependencyInjection;
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Reflection;
@@ -27,19 +28,24 @@ namespace AmethystWindows.Models
 
         private readonly NotifyIcon? _notifyIcon;
 
-        private MainWindowViewModel mainWindowViewModel = App.Current.MainWindow.DataContext as MainWindowViewModel;
+        private readonly MainWindowViewModel? _mainWindowViewModel;
 
         public NotifyIconWrapper()
         {
             if (DesignerProperties.GetIsInDesignMode(this))
                 return;
+
+            _mainWindowViewModel = IocProvider.GetService<MainWindowViewModel>() ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
+
             _notifyIcon = new NotifyIcon
             {
                 Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
                 Visible = true,
                 ContextMenuStrip = CreateContextMenu()
             };
+
             _notifyIcon.DoubleClick += OpenItem_Click;
+
             Application.Current.Exit += (obj, args) => { _notifyIcon.Dispose(); };
         }
 
@@ -70,25 +76,40 @@ namespace AmethystWindows.Models
         {
             var openItem = new ToolStripMenuItem("Open");
             openItem.Click += OpenItem_Click;
+
             var disableMenuItem = new ToolStripMenuItem("Disabled");
             disableMenuItem.CheckOnClick = true;
             disableMenuItem.Click += DisableMenuItem_Click;
+
             var exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += ExitItem_Click;
-            var contextMenu = new ContextMenuStrip { Items = { openItem, disableMenuItem, exitItem } };
+
+            var contextMenu = new ContextMenuStrip
+            {
+                Items =
+                {
+                    openItem,
+                    disableMenuItem,
+                    exitItem
+                }
+            };
             return contextMenu;
         }
 
         private void DisableMenuItem_Click(object? sender, EventArgs eventArgs)
         {
-            if (mainWindowViewModel.Disabled)
+            if (sender is null)
             {
-                mainWindowViewModel.Disabled = false;
+                throw new ArgumentNullException(nameof(sender));
             }
-            else
+
+            if (_mainWindowViewModel is null)
             {
-                mainWindowViewModel.Disabled = true;
+                throw new ArgumentNullException(nameof(_mainWindowViewModel));
             }
+
+            var menuItem = (ToolStripMenuItem)sender;
+            _mainWindowViewModel.Disabled = menuItem.Checked;
         }
 
         private void OpenItem_Click(object? sender, EventArgs eventArgs)
@@ -102,14 +123,6 @@ namespace AmethystWindows.Models
         {
             var args = new RoutedEventArgs(ExitSelectedEvent);
             RaiseEvent(args);
-        }
-
-        public class NotifyRequestRecord
-        {
-            public string Title { get; set; }
-            public string Text { get; set; }
-            public int Duration { get; set; }
-            public ToolTipIcon Icon { get; set; } = ToolTipIcon.Info;
         }
     }
 }
