@@ -1,10 +1,10 @@
-﻿using AmethystWindows.Models;
+﻿using AmethystWindows.DependencyInjection;
 using AmethystWindows.Models.Enums;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -15,61 +15,112 @@ namespace AmethystWindows.Models.Converters
 {
     public class DesktopMonitorsConverter : JsonConverter
     {
-        public override bool CanConvert(Type objectType) => objectType == typeof(List<ViewModelDesktopMonitor>);
+        // Constants used for store/convert
+        private const string DESKTOPID = "DesktopID";
+        private const string FACTOR = "Factor";
+        private const string MONITORX = "MonitorX";
+        private const string MONITORY = "MonitorY";
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        private readonly ILogger _logger;
+
+        public DesktopMonitorsConverter()
         {
-            var list = value as List<ViewModelDesktopMonitor>;
+            _logger = IocProvider.GetService<ILogger>() ?? throw new ArgumentNullException(nameof(_logger));
+        }
+
+        public override bool CanConvert(Type objectType)
+            => objectType == typeof(List<ViewModelDesktopMonitor>);
+
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        {
+            var list = value as List<ViewModelDesktopMonitor>
+                ?? new();
 
             writer.WriteStartArray();
             foreach (ViewModelDesktopMonitor desktopMonitor in list)
             {
-                User32.MONITORINFO info = new User32.MONITORINFO();
+                var info = new User32.MONITORINFO();
                 info.cbSize = (uint)Marshal.SizeOf(info);
                 User32.GetMonitorInfo(desktopMonitor.Monitor, ref info);
 
                 writer.WriteStartObject();
-                writer.WritePropertyName("DesktopID");
-                writer.WriteValue(desktopMonitor.VirtualDesktop.Id);
-                writer.WritePropertyName("MonitorX");
-                writer.WriteValue(info.rcMonitor.X);
-                writer.WritePropertyName("MonitorY");
-                writer.WriteValue(info.rcMonitor.Y);
-                writer.WritePropertyName("Layout");
-                writer.WriteValue(desktopMonitor.Layout);
-                writer.WritePropertyName("Factor");
-                writer.WriteValue(desktopMonitor.Factor);
-                writer.WriteEndObject();
 
+                writer.WritePropertyName(DESKTOPID);
+                writer.WriteValue(desktopMonitor.VirtualDesktop.Id);
+
+                writer.WritePropertyName(MONITORX);
+                writer.WriteValue(info.rcMonitor.X);
+
+                writer.WritePropertyName(MONITORY);
+                writer.WriteValue(info.rcMonitor.Y);
+
+                writer.WritePropertyName(nameof(Layout));
+                writer.WriteValue(desktopMonitor.Layout);
+
+                writer.WritePropertyName(FACTOR);
+                writer.WriteValue(desktopMonitor.Factor);
+
+                writer.WriteEndObject();
             }
             writer.WriteEndArray();
-
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
-            List<ViewModelDesktopMonitor> list = new List<ViewModelDesktopMonitor>();
+            var list = new List<ViewModelDesktopMonitor>()
+                ?? new();
 
-            JArray array = JArray.Load(reader);
+            var array = JArray.Load(reader);
 
             foreach (JObject desktopMonitor in array.Children())
             {
                 try
                 {
-                    Layout layout = (Layout)desktopMonitor.GetValue("Layout").Value<int>();
-                    int factor = desktopMonitor.GetValue("Factor").Value<int>();
+                    if (desktopMonitor is null)
+                    {
+                        throw new ArgumentNullException();
+                    }
 
-                    Point point = new Point(desktopMonitor.GetValue("MonitorX").Value<int>() + 100, desktopMonitor.GetValue("MonitorY").Value<int>() + 100);
-                    HMONITOR monitor = User32.MonitorFromPoint(point, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
+                    var layoutJToken = desktopMonitor.GetValue(nameof(Layout));
+                    var layout = layoutJToken is not null
+                        ? (Layout)layoutJToken.Value<int>()
+                        : default;
 
-                    VirtualDesktop savedDesktop = VirtualDesktop.GetDesktops().First(vD => vD.Id.Equals(new Guid(desktopMonitor.GetValue("DesktopID").Value<string>())));
-                    HMONITOR savedMonitor = monitor;
+                    var factorJToken = desktopMonitor.GetValue(FACTOR);
+                    var factor = factorJToken is not null
+                        ? factorJToken.Value<int>()
+                        : default;
+
+                    var monitorXJToken = desktopMonitor.GetValue(MONITORX);
+                    var monitorX = monitorXJToken is not null
+                        ? monitorXJToken.Value<int>()
+                        : default;
+
+                    var monitorYJToken = desktopMonitor.GetValue(MONITORY);
+                    var monitorY = monitorYJToken is not null
+                        ? monitorYJToken.Value<int>()
+                        : default;
+
+                    var point = new Point(monitorX + 100, monitorY + 100);
+                    var monitor = User32.MonitorFromPoint(point, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
+
+                    var desktopIdJToken = desktopMonitor.GetValue(DESKTOPID);
+                    var desktopId = desktopIdJToken is not null
+                        ? desktopIdJToken.Value<string>()
+                        : default;
+                    var desktopGuid = new Guid(desktopId ?? "empty");
+                    var savedDesktop = VirtualDesktop.GetDesktops()
+                        .First(vD => vD.Id.Equals(desktopGuid));
+                    // TODO check if i's required somewhere? var savedMonitor = monitor;
 
                     list.Add(new ViewModelDesktopMonitor(monitor, savedDesktop, factor, layout));
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Debug.WriteLine("WARNING: something was wrong in reloading your settings. Most probably monitor or virtual desktop do not exist anymore.");
+                    const string ExMessage = $"Failed to convert {nameof(ViewModelDesktopMonitor)} reloading " +
+                        $"from settings. Most probably monitor or virtual desktop do not exist anymore.";
+
+                    _logger.Error(ex, ExMessage);
                 }
             }
 
