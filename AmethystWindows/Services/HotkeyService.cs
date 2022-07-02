@@ -24,13 +24,17 @@ namespace AmethystWindows.Services
         private readonly ILogger _logger;
         private readonly DesktopService _desktopWindowsManager;
         private readonly MainWindowViewModel _mainWindowViewModel;
+        private readonly ISettingsService _settingsService;
         private readonly HWND _windowHandler;
 
-        public HotkeyService(ILogger logger, DesktopService desktopWindowsManager, MainWindow mainWindow, MainWindowViewModel mainWindowViewModel)
+
+        public HotkeyService(ILogger logger, DesktopService desktopWindowsManager, MainWindow mainWindow, MainWindowViewModel mainWindowViewModel, ISettingsService settingsService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _desktopWindowsManager = desktopWindowsManager ?? throw new ArgumentNullException(nameof(desktopWindowsManager));
-            _mainWindowViewModel = mainWindowViewModel;
+            _mainWindowViewModel = mainWindowViewModel ?? throw new ArgumentNullException(nameof(mainWindowViewModel));
+            _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+
             _windowHandler = new WindowInteropHelper(mainWindow).Handle;
         }
 
@@ -105,17 +109,14 @@ namespace AmethystWindows.Services
             var hookAll = SetWinEventHook(EventConstants.EVENT_MIN, EventConstants.EVENT_MAX, HINSTANCE.NULL, winEventHookAll, 0, 0, WINEVENT.WINEVENT_OUTOFCONTEXT | WINEVENT.WINEVENT_SKIPOWNPROCESS);
         }
 
-        // TODO after set to none the hotkey is still triggering the old behavior
         public void RegisterHotkeys()
         {
-            var hotkeys = _mainWindowViewModel.Hotkeys;
-
-            // TODO validate hotkeys?
+            var hotkeys = new ObservableHotkeys(_settingsService.GetHotkeyOptions());
 
             var commandHotkeys = (CommandHotkey[])Enum.GetValues(typeof(CommandHotkey));
             foreach (var commandHotkey in commandHotkeys)
             {
-                // Ignore empty hotkey
+                // Ignore empty command hotkey
                 if (commandHotkey == CommandHotkey.None)
                 {
                     continue;
@@ -126,7 +127,6 @@ namespace AmethystWindows.Services
 
                 var hotkeyModel = hotkeys.FirstOrDefault(x => x.Command.Equals(commandHotkey));
 
-                // TODO check if it's possible - prevent an invalid hotkey value
                 if (hotkeyModel == null)
                 {
                     _logger.Error($"Hotkey ({{CommandHotkeyId}}){{CommandHotkey}} not found.", hotkeyId, commandHotkey);

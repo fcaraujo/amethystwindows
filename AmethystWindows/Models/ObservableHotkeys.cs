@@ -3,61 +3,39 @@ using AmethystWindows.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
 
 namespace AmethystWindows.Models
 {
-
+    /// <summary>
+    /// Responsible to translate the settings options into a collection that's passed to the UI
+    /// Probably there's no need to be an observable collection anymore as we're using the services to get/set
+    /// </summary>
     public class ObservableHotkeys : ObservableCollection<HotkeyViewModel>
     {
-        public ObservableHotkeys(List<HotkeyViewModel> list) : base(list)
-        {
-            foreach (HotkeyViewModel viewModelHotkey in list)
-            {
-                viewModelHotkey.PropertyChanged += ItemPropertyChanged;
-            }
-            CollectionChanged += ObservableHotkeys_CollectionChanged;
-        }
-
-        public ObservableHotkeys()
-        {
-            CollectionChanged += ObservableHotkeys_CollectionChanged;
-        }
-
+        /// <summary>
+        /// Used to create the collection from the settings service
+        /// </summary>
+        /// <param name="options"></param>
         public ObservableHotkeys(IEnumerable<HotkeyOptions> options)
         {
             foreach (var hotkey in options)
             {
-                var command = (CommandHotkey)Enum.Parse(typeof(CommandHotkey), hotkey.Command);
-                var hotkeyViewModel = new HotkeyViewModel(command, hotkey.Keys);
+                if (hotkey is null)
+                {
+                    throw new ArgumentNullException(nameof(hotkey));
+                }
+
+                var command = (hotkey.Command is not null)
+                    ? (CommandHotkey)Enum.Parse(typeof(CommandHotkey), hotkey.Command)
+                    : throw new ArgumentNullException(nameof(hotkey.Command));
+
+                var keys = (!string.IsNullOrWhiteSpace(hotkey.Keys))
+                    ? hotkey.Keys
+                    : throw new ArgumentNullException(nameof(hotkey.Keys));
+
+                var hotkeyViewModel = new HotkeyViewModel(command, keys);
                 Items.Add(hotkeyViewModel);
             }
-            // TODO does it need to bind handlers?
-        }
-
-        private void ObservableHotkeys_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (e.NewItems != null)
-            {
-                foreach (object item in e.NewItems)
-                {
-                    ((INotifyPropertyChanged)item).PropertyChanged += ItemPropertyChanged;
-                }
-            }
-            if (e.OldItems != null)
-            {
-                foreach (object item in e.OldItems)
-                {
-                    ((INotifyPropertyChanged)item).PropertyChanged -= ItemPropertyChanged;
-                }
-            }
-        }
-
-        private void ItemPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            NotifyCollectionChangedEventArgs args = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, sender, sender);
-            OnCollectionChanged(args);
         }
     }
 }
