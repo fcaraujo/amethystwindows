@@ -693,7 +693,8 @@ namespace AmethystWindows.Services
             {
                 desktopWindows.AddRange(Windows[new Pair<VirtualDesktop, HMONITOR>(desktopMonitor.Key.Key, desktopMonitor.Key.Value)].Where(window => window.Window == hWND));
             }
-            return desktopWindows.FirstOrDefault();
+            var window = desktopWindows.FirstOrDefault() ?? throw new ArgumentNullException(nameof(DesktopWindow));
+            return window;
         }
 
         private void Windows_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)

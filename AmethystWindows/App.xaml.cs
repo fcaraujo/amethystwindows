@@ -79,21 +79,17 @@ namespace AmethystWindows
         {
             base.OnStartup(e);
 
-            var mainWindow = _serviceProvider.GetService<MainWindow>();
-            if (mainWindow == null)
-            {
-                throw new ArgumentNullException(nameof(MainWindow));
-            }
+            var mainWindow = _serviceProvider.GetService<MainWindow>() ?? throw new ArgumentNullException(nameof(MainWindow));
             mainWindow.Show();
 
             VirtualDesktop.CurrentChanged += OnVirtualDesktopIsChangedHandler;
 
-            var hotkeyService = _serviceProvider.GetService<HotkeyService>();
-            hotkeyService?.SetWindowsHook();
-            hotkeyService?.RegisterHotkeys();
+            var hotkeyService = _serviceProvider.GetService<HotkeyService>() ?? throw new ArgumentNullException(nameof(HotkeyService));
+            hotkeyService.SetWindowsHook();
+            hotkeyService.RegisterHotkeys();
 
-            var desktopWindowsManager = _serviceProvider.GetService<DesktopService>();
-            desktopWindowsManager?.CollectWindows();
+            var desktopWindowsManager = _serviceProvider.GetService<DesktopService>() ?? throw new ArgumentNullException(nameof(DesktopService));
+            desktopWindowsManager.CollectWindows();
 
             InitVirtualDesktops();
         }
@@ -101,8 +97,7 @@ namespace AmethystWindows
         public static void InitVirtualDesktops()
         {
             var settingsService = IocProvider.GetService<ISettingsService>();
-            var settings = settingsService?.GetSettingsOptions();
-            // TODO check null pointer here
+            var settings = settingsService.GetSettingsOptions();
             var virtualDesktopSetting = settings.VirtualDesktops;
 
             var virtualDesktopsExisting = VirtualDesktop.GetDesktops();
@@ -125,7 +120,7 @@ namespace AmethystWindows
             }
         }
 
-        private void OnVirtualDesktopIsChangedHandler(object sender, VirtualDesktopChangedEventArgs e)
+        private void OnVirtualDesktopIsChangedHandler(object? sender, VirtualDesktopChangedEventArgs e)
         {
             var _desktopWindowsManager = _serviceProvider.GetService<DesktopService>() ?? throw new ArgumentNullException(nameof(DesktopService));
             _desktopWindowsManager.CollectWindows();
