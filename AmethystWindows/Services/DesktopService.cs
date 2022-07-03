@@ -190,21 +190,58 @@ namespace AmethystWindows.Services
         // Previously from *.DRAW
         public void Draw(Pair<VirtualDesktop, HMONITOR> key)
         {
-            if (!_mainWindowViewModel.Disabled)
+            if (_mainWindowViewModel.Disabled)
+                return;
+
+            ObservableCollection<DesktopWindow> windows = Windows[key];
+            KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> desktopMonitor = new KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>(key, windows);
+            int mX, mY;
+            IEnumerable<Rectangle> gridGenerator;
+            DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
+
+            foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
             {
-                ObservableCollection<DesktopWindow> windows = Windows[key];
-                KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> desktopMonitor = new KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>(key, windows);
+                User32.ShowWindow(w.Item2.Window, ShowWindowCommand.SW_RESTORE);
+            }
+
+            HDWP hDWP1 = User32.BeginDeferWindowPos(windows.Count);
+            foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+            {
+                Rectangle adjustedSize = new Rectangle(
+                    gridGenerator.ToArray()[w.Item1].X,
+                    gridGenerator.ToArray()[w.Item1].Y,
+                    gridGenerator.ToArray()[w.Item1].Width,
+                    gridGenerator.ToArray()[w.Item1].Height
+                );
+
+                DrawWindow(mX, mY, adjustedSize, w, hDWP1, windows.Count);
+            }
+            User32.EndDeferWindowPos(hDWP1.DangerousGetHandle());
+
+            foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+            {
+                w.Item2.GetWindowInfo();
+            }
+        }
+
+        public void Draw()
+        {
+            if (_mainWindowViewModel.Disabled)
+                return;
+
+            foreach (var desktopMonitor in Windows)
+            {
                 int mX, mY;
                 IEnumerable<Rectangle> gridGenerator;
                 DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
 
-                foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
                 {
                     User32.ShowWindow(w.Item2.Window, ShowWindowCommand.SW_RESTORE);
                 }
 
-                HDWP hDWP1 = User32.BeginDeferWindowPos(windows.Count);
-                foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+                HDWP hDWP1 = User32.BeginDeferWindowPos(Windows.Count);
+                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
                 {
                     Rectangle adjustedSize = new Rectangle(
                         gridGenerator.ToArray()[w.Item1].X,
@@ -213,50 +250,13 @@ namespace AmethystWindows.Services
                         gridGenerator.ToArray()[w.Item1].Height
                     );
 
-                    DrawWindow(mX, mY, adjustedSize, w, hDWP1, windows.Count);
+                    DrawWindow(mX, mY, adjustedSize, w, hDWP1, Windows.Count);
                 }
                 User32.EndDeferWindowPos(hDWP1.DangerousGetHandle());
 
                 foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
                 {
                     w.Item2.GetWindowInfo();
-                }
-            }
-        }
-
-        public void Draw()
-        {
-            if (!_mainWindowViewModel.Disabled)
-            {
-                foreach (var desktopMonitor in Windows)
-                {
-                    int mX, mY;
-                    IEnumerable<Rectangle> gridGenerator;
-                    DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
-
-                    foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-                    {
-                        User32.ShowWindow(w.Item2.Window, ShowWindowCommand.SW_RESTORE);
-                    }
-
-                    HDWP hDWP1 = User32.BeginDeferWindowPos(Windows.Count);
-                    foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-                    {
-                        Rectangle adjustedSize = new Rectangle(
-                            gridGenerator.ToArray()[w.Item1].X,
-                            gridGenerator.ToArray()[w.Item1].Y,
-                            gridGenerator.ToArray()[w.Item1].Width,
-                            gridGenerator.ToArray()[w.Item1].Height
-                        );
-
-                        DrawWindow(mX, mY, adjustedSize, w, hDWP1, Windows.Count);
-                    }
-                    User32.EndDeferWindowPos(hDWP1.DangerousGetHandle());
-
-                    foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-                    {
-                        w.Item2.GetWindowInfo();
-                    }
                 }
             }
         }
@@ -284,7 +284,7 @@ namespace AmethystWindows.Services
             }
             catch
             {
-                _mainWindowViewModel.DesktopMonitors.Add(new ViewModelDesktopMonitor(
+                _mainWindowViewModel.DesktopMonitors.Add(new DesktopMonitorViewModel(
                     desktopMonitor.Key.Value,
                     desktopMonitor.Key.Key,
                     0,

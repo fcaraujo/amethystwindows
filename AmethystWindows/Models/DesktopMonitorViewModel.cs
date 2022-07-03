@@ -8,12 +8,21 @@ using WindowsDesktop;
 
 namespace AmethystWindows.Models
 {
-    public class ViewModelDesktopMonitor : INotifyPropertyChanged
+    public class DesktopMonitorViewModel : INotifyPropertyChanged
     {
         private HMONITOR _monitor;
-        private VirtualDesktop _virtualDesktop;
+        private VirtualDesktop _virtualDesktop = VirtualDesktop.Create();
         private int _factor;
         private Layout _layout;
+
+        public DesktopMonitorViewModel(HMONITOR monitor, VirtualDesktop virtualDesktop, int factor, Layout layout)
+        {
+            Monitor = monitor;
+            VirtualDesktop = virtualDesktop;
+            Factor = factor;
+            Layout = layout;
+        }
+
         public HMONITOR Monitor
         {
             get => _monitor;
@@ -24,6 +33,7 @@ namespace AmethystWindows.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Monitor)));
             }
         }
+
         public VirtualDesktop VirtualDesktop
         {
             get => _virtualDesktop;
@@ -34,6 +44,7 @@ namespace AmethystWindows.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(VirtualDesktop)));
             }
         }
+
         public int Factor
         {
             get => _factor;
@@ -44,6 +55,7 @@ namespace AmethystWindows.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Factor)));
             }
         }
+
         public Layout Layout
         {
             get => _layout;
@@ -55,13 +67,7 @@ namespace AmethystWindows.Models
             }
         }
 
-        public ViewModelDesktopMonitor(HMONITOR monitor, VirtualDesktop virtualDesktop, int factor, Layout layout)
-        {
-            Monitor = monitor;
-            VirtualDesktop = virtualDesktop;
-            Factor = factor;
-            Layout = layout;
-        }
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -103,7 +109,7 @@ namespace AmethystWindows.Models
 
         public override bool Equals(object? obj)
         {
-            return obj is ViewModelDesktopMonitor monitor &&
+            return obj is DesktopMonitorViewModel monitor &&
                    EqualityComparer<HMONITOR>.Default.Equals(Monitor, monitor.Monitor) &&
                    EqualityComparer<VirtualDesktop>.Default.Equals(VirtualDesktop, monitor.VirtualDesktop) &&
                    Factor == monitor.Factor &&
@@ -115,7 +121,7 @@ namespace AmethystWindows.Models
             return HashCode.Combine(Monitor, VirtualDesktop, Factor, Layout);
         }
 
-        public Pair<VirtualDesktop, HMONITOR> getPair()
+        public Pair<VirtualDesktop, HMONITOR> GetPair()
         {
             return new Pair<VirtualDesktop, HMONITOR>(VirtualDesktop, Monitor);
         }

@@ -13,6 +13,6 @@ namespace AmethystWindows.Settings
         public List<Pair<string, string>> Additions { get; set; } = new List<Pair<string, string>>();
 
         [JsonConverter(typeof(DesktopMonitorsConverter))]
-        public List<ViewModelDesktopMonitor> DesktopMonitors = new List<ViewModelDesktopMonitor>();
+        public List<DesktopMonitorViewModel> DesktopMonitors = new List<DesktopMonitorViewModel>();
     }
 }

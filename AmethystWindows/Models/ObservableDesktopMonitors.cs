@@ -9,11 +9,11 @@ using WindowsDesktop;
 
 namespace AmethystWindows.Models
 {
-    public class ObservableDesktopMonitors : ObservableCollection<ViewModelDesktopMonitor>
+    public class ObservableDesktopMonitors : ObservableCollection<DesktopMonitorViewModel>
     {
-        public ObservableDesktopMonitors(List<ViewModelDesktopMonitor> list) : base(list)
+        public ObservableDesktopMonitors(List<DesktopMonitorViewModel> list) : base(list)
         {
-            foreach (ViewModelDesktopMonitor viewModelDesktopMonitor in list)
+            foreach (DesktopMonitorViewModel viewModelDesktopMonitor in list)
             {
                 viewModelDesktopMonitor.PropertyChanged += ItemPropertyChanged;
             }
@@ -49,9 +49,9 @@ namespace AmethystWindows.Models
             OnCollectionChanged(args);
         }
 
-        public ViewModelDesktopMonitor this[Pair<VirtualDesktop, HMONITOR> desktopMonitor] => FindByDesktopMonitor(desktopMonitor);
+        public DesktopMonitorViewModel this[Pair<VirtualDesktop, HMONITOR> desktopMonitor] => FindByDesktopMonitor(desktopMonitor);
 
-        private ViewModelDesktopMonitor FindByDesktopMonitor(Pair<VirtualDesktop, HMONITOR> desktopMonitor)
+        private DesktopMonitorViewModel FindByDesktopMonitor(Pair<VirtualDesktop, HMONITOR> desktopMonitor)
         {
             return this.First(viewModelDesktopMonitor => viewModelDesktopMonitor.Monitor.Equals(desktopMonitor.Value) && viewModelDesktopMonitor.VirtualDesktop.Equals(desktopMonitor.Key));
         }

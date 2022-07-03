@@ -120,8 +120,8 @@ namespace AmethystWindows.Models
 
         private void _desktopMonitors_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            ViewModelDesktopMonitor viewModelDesktopMonitor = (ViewModelDesktopMonitor)e.NewItems[0];
-            LastChangedDesktopMonitor = viewModelDesktopMonitor.getPair();
+            DesktopMonitorViewModel viewModelDesktopMonitor = (DesktopMonitorViewModel)e.NewItems[0];
+            LastChangedDesktopMonitor = viewModelDesktopMonitor.GetPair();
             OnPropertyChanged("DesktopMonitors");
         }
 

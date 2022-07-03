@@ -29,15 +29,15 @@ namespace AmethystWindows.Models.Converters
         }
 
         public override bool CanConvert(Type objectType)
-            => objectType == typeof(List<ViewModelDesktopMonitor>);
+            => objectType == typeof(List<DesktopMonitorViewModel>);
 
         public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
-            var list = value as List<ViewModelDesktopMonitor>
+            var list = value as List<DesktopMonitorViewModel>
                 ?? new();
 
             writer.WriteStartArray();
-            foreach (ViewModelDesktopMonitor desktopMonitor in list)
+            foreach (DesktopMonitorViewModel desktopMonitor in list)
             {
                 var info = new User32.MONITORINFO();
                 info.cbSize = (uint)Marshal.SizeOf(info);
@@ -67,7 +67,7 @@ namespace AmethystWindows.Models.Converters
 
         public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
-            var list = new List<ViewModelDesktopMonitor>()
+            var list = new List<DesktopMonitorViewModel>()
                 ?? new();
 
             var array = JArray.Load(reader);
@@ -111,13 +111,15 @@ namespace AmethystWindows.Models.Converters
                     var desktopGuid = new Guid(desktopId ?? "empty");
                     var savedDesktop = VirtualDesktop.GetDesktops()
                         .First(vD => vD.Id.Equals(desktopGuid));
-                    // TODO check if i's required somewhere? var savedMonitor = monitor;
 
-                    list.Add(new ViewModelDesktopMonitor(monitor, savedDesktop, factor, layout));
+                    // TODO check if i's required somewhere? 
+                    // var savedMonitor = monitor;
+
+                    list.Add(new DesktopMonitorViewModel(monitor, savedDesktop, factor, layout));
                 }
                 catch (Exception ex)
                 {
-                    const string ExMessage = $"Failed to convert {nameof(ViewModelDesktopMonitor)} reloading " +
+                    const string ExMessage = $"Failed to convert {nameof(DesktopMonitorViewModel)} reloading " +
                         $"from settings. Most probably monitor or virtual desktop do not exist anymore.";
 
                     _logger.Error(ex, ExMessage);
