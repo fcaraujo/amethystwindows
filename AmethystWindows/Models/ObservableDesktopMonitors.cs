@@ -43,7 +43,7 @@ namespace AmethystWindows.Models
             }
         }
 
-        private void ItemPropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void ItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             NotifyCollectionChangedEventArgs args = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, sender, sender);
             OnCollectionChanged(args);

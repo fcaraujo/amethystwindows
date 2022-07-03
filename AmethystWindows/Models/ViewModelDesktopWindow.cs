@@ -4,11 +4,11 @@ namespace AmethystWindows.Models
 {
     public class ViewModelDesktopWindow
     {
-        public string Window { get; set; }
-        public string AppName { get; set; }
-        public string ClassName { get; set; }
-        public string VirtualDesktop { get; set; }
-        public string Monitor { get; set; }
+        public string Window { get; set; } = string.Empty;
+        public string AppName { get; set; } = string.Empty;
+        public string ClassName { get; set; } = string.Empty;
+        public string VirtualDesktop { get; set; } = string.Empty;
+        public string Monitor { get; set; } = string.Empty;
 
         public ViewModelDesktopWindow(string appName, string className)
         {
