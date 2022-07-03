@@ -16,6 +16,7 @@ namespace AmethystWindowsTests.Services
     {
         private readonly Mock<ILogger> loggerMock = new();
         private readonly Mock<ISettingsService> settingsServiceMock = new();
+        private readonly Mock<IVirtualDesktopService> virtualDesktopServiceMock = new();
         private readonly MainWindowViewModel mainWindowViewModel;
 
         private readonly IDesktopService _sut;
@@ -29,7 +30,7 @@ namespace AmethystWindowsTests.Services
                 .Returns(new SettingsOptions { });
 
             mainWindowViewModel = new(settingsServiceMock.Object);
-            _sut = new DesktopService(loggerMock.Object, settingsServiceMock.Object, mainWindowViewModel);
+            _sut = new DesktopService(loggerMock.Object, virtualDesktopServiceMock.Object, settingsServiceMock.Object, mainWindowViewModel);
         }
 
         [Fact]

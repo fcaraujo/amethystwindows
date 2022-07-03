@@ -69,6 +69,8 @@ namespace AmethystWindows
             services.AddTransient<ILogger>(x => logger);
             services.AddSingleton<MainWindow>();
             services.AddSingleton<MainWindowViewModel>();
+            services.AddSingleton<IVirtualDesktopWrapper, VirtualDesktopWrapper>();
+            services.AddSingleton<IVirtualDesktopService, VirtualDesktopService>();
             services.AddSingleton<IDesktopService, DesktopService>();
             services.AddSingleton<HotkeyService>();
 
@@ -88,36 +90,11 @@ namespace AmethystWindows
             hotkeyService.SetWindowsHook();
             hotkeyService.RegisterHotkeys();
 
-            var desktopWindowsManager = _serviceProvider.GetService<IDesktopService>() ?? throw new ArgumentNullException(nameof(DesktopService));
-            desktopWindowsManager.CollectWindows();
+            var desktopService = _serviceProvider.GetService<IDesktopService>() ?? throw new ArgumentNullException(nameof(DesktopService));
+            desktopService.CollectWindows();
 
-            InitVirtualDesktops();
-        }
-
-        public static void InitVirtualDesktops()
-        {
-            var settingsService = IocProvider.GetService<ISettingsService>();
-            var settings = settingsService.GetSettingsOptions();
-            var virtualDesktopSetting = settings.VirtualDesktops;
-
-            var virtualDesktopsExisting = VirtualDesktop.GetDesktops();
-            var virtualDesktopDifference = virtualDesktopSetting - virtualDesktopsExisting.Length;
-
-            if (virtualDesktopDifference < 0)
-            {
-                for (int i = virtualDesktopDifference; i < 0; i++)
-                {
-                    virtualDesktopsExisting[virtualDesktopsExisting.Length + i].Remove();
-                }
-            }
-
-            if (virtualDesktopDifference > 0)
-            {
-                for (int i = 0; i < virtualDesktopDifference; i++)
-                {
-                    VirtualDesktop.Create();
-                }
-            }
+            var virtualDesktopService = _serviceProvider.GetService<IVirtualDesktopService>() ?? throw new ArgumentNullException(nameof(VirtualDesktopService));
+            virtualDesktopService.SynchronizeDesktops();
         }
 
         private void OnVirtualDesktopIsChangedHandler(object? sender, VirtualDesktopChangedEventArgs e)

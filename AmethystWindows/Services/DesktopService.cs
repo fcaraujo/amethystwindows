@@ -1,4 +1,5 @@
 ﻿using AmethystWindows.Models;
+using AmethystWindows.Models.Configuration;
 using AmethystWindows.Models.Enums;
 using AmethystWindows.Settings;
 using DebounceThrottle;
@@ -38,6 +39,7 @@ namespace AmethystWindows.Services
     public class DesktopService : IDesktopService
     {
         private readonly ILogger _logger;
+        private readonly IVirtualDesktopService _virtualDesktopService;
         private readonly ISettingsService _settingsService;
 
         private readonly MainWindowViewModel _mainWindowViewModel;
@@ -95,9 +97,10 @@ namespace AmethystWindows.Services
             "Settings",
         };
 
-        public DesktopService(ILogger logger, ISettingsService settingsService, MainWindowViewModel amainWindowViewModel)
+        public DesktopService(ILogger logger, IVirtualDesktopService virtualDesktopService, ISettingsService settingsService, MainWindowViewModel amainWindowViewModel)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _virtualDesktopService = virtualDesktopService ?? throw new ArgumentNullException(nameof(virtualDesktopService));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
             _mainWindowViewModel = amainWindowViewModel ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
 
@@ -106,6 +109,35 @@ namespace AmethystWindows.Services
 
             ExcludedWindows.CollectionChanged += ExcludedWindows_CollectionChanged;
             _mainWindowViewModel.PropertyChanged += MainWindowViewModel_PropertyChanged;
+        }
+
+        public void AddWindow(DesktopWindow desktopWindow)
+        {
+            Pair<string, string> configurableFilter = _mainWindowViewModel.ConfigurableFilters.FirstOrDefault(f => f.Key == desktopWindow.AppName);
+
+            if (!Windows.ContainsKey(desktopWindow.GetDesktopMonitor()) && !WindowsSubscribed.ContainsKey(desktopWindow.GetDesktopMonitor()))
+            {
+                WindowsSubscribed.Add(desktopWindow.GetDesktopMonitor(), false);
+                Windows.Add(desktopWindow.GetDesktopMonitor(), new ObservableCollection<DesktopWindow>());
+                SubscribeWindowsCollectionChanged(desktopWindow.GetDesktopMonitor(), true);
+            }
+
+            if (FixedFilters.All(s => !desktopWindow.AppName.StartsWith(s))
+                && desktopWindow.AppName != string.Empty &&
+                !Windows[desktopWindow.GetDesktopMonitor()].Contains(desktopWindow))
+            {
+                if (configurableFilter.Equals(null))
+                {
+                    Windows[desktopWindow.GetDesktopMonitor()].Insert(0, desktopWindow);
+                }
+                else
+                {
+                    if (configurableFilter.Value != "*" && configurableFilter.Value != desktopWindow.ClassName)
+                    {
+                        Windows[desktopWindow.GetDesktopMonitor()].Insert(0, desktopWindow);
+                    }
+                }
+            }
         }
 
         public void Draw()
@@ -404,35 +436,6 @@ namespace AmethystWindows.Services
             }
         }
 
-        public void AddWindow(DesktopWindow desktopWindow)
-        {
-            Pair<string, string> configurableFilter = _mainWindowViewModel.ConfigurableFilters.FirstOrDefault(f => f.Key == desktopWindow.AppName);
-
-            if (!Windows.ContainsKey(desktopWindow.GetDesktopMonitor()) && !WindowsSubscribed.ContainsKey(desktopWindow.GetDesktopMonitor()))
-            {
-                WindowsSubscribed.Add(desktopWindow.GetDesktopMonitor(), false);
-                Windows.Add(desktopWindow.GetDesktopMonitor(), new ObservableCollection<DesktopWindow>());
-                SubscribeWindowsCollectionChanged(desktopWindow.GetDesktopMonitor(), true);
-            }
-
-            if (FixedFilters.All(s => !desktopWindow.AppName.StartsWith(s))
-                && desktopWindow.AppName != string.Empty &&
-                !Windows[desktopWindow.GetDesktopMonitor()].Contains(desktopWindow))
-            {
-                if (configurableFilter.Equals(null))
-                {
-                    Windows[desktopWindow.GetDesktopMonitor()].Insert(0, desktopWindow);
-                }
-                else
-                {
-                    if (configurableFilter.Value != "*" && configurableFilter.Value != desktopWindow.ClassName)
-                    {
-                        Windows[desktopWindow.GetDesktopMonitor()].Insert(0, desktopWindow);
-                    }
-                }
-            }
-        }
-
         public void RemoveWindow(DesktopWindow desktopWindow)
         {
             Windows[desktopWindow.GetDesktopMonitor()].Remove(desktopWindow);
@@ -546,12 +549,6 @@ namespace AmethystWindows.Services
         {
             _logger.Debug($"ModelViewChanged: {e.PropertyName}");
 
-            if (e.PropertyName == "VirtualDesktops")
-            {
-                // TODO check how to use DI here...?
-                App.InitVirtualDesktops();
-            }
-
             // TODO check if saving hotkeys on the event is enough
             //if (e.PropertyName == "Hotkeys")
             //{
@@ -592,6 +589,11 @@ namespace AmethystWindows.Services
             {
                 if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) && _mainWindowViewModel.LastChangedDesktopMonitor.Key != null) debounceDispatcher.Debounce(() => Draw(_mainWindowViewModel.LastChangedDesktopMonitor));
                 else debounceDispatcher.Debounce(() => Draw());
+            }
+
+            if (e.PropertyName == nameof(SettingsOptions.VirtualDesktops))
+            {
+                _virtualDesktopService.SynchronizeDesktops();
             }
         }
 
@@ -961,7 +963,7 @@ namespace AmethystWindows.Services
 
         private void MoveWindowSpecificVirtualDesktop(DesktopWindow window, Guid? desktopGuid)
         {
-            if(window is null || desktopGuid is null)
+            if (window is null || desktopGuid is null)
             {
                 return;
             }
