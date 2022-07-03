@@ -6,10 +6,10 @@ namespace AmethystWindows.Models
     // TODO Check where/why we need this struct instead of Dictionary....?!
     public struct Pair<K, V>
     {
-        public K Key { get; set; }
+        public K? Key { get; set; }
         public V Value { get; set; }
 
-        public Pair(K key, V value)
+        public Pair(K? key, V value)
         {
             Key = key;
             Value = value;

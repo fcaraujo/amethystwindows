@@ -4,11 +4,11 @@ namespace AmethystWindows.Models
 {
     public class ViewModelDesktopWindow
     {
-        public string Window { get; set; } = string.Empty;
         public string AppName { get; set; } = string.Empty;
         public string ClassName { get; set; } = string.Empty;
-        public string VirtualDesktop { get; set; } = string.Empty;
         public string Monitor { get; set; } = string.Empty;
+        public string VirtualDesktop { get; set; } = string.Empty;
+        public string Window { get; set; } = string.Empty;
 
         public ViewModelDesktopWindow(string appName, string className)
         {
@@ -18,11 +18,20 @@ namespace AmethystWindows.Models
 
         public ViewModelDesktopWindow(string window, string appName, string className, string virtualDesktop, string monitor)
         {
-            Window = window;
             AppName = appName;
             ClassName = className;
-            VirtualDesktop = virtualDesktop;
             Monitor = monitor;
+            VirtualDesktop = virtualDesktop;
+            Window = window;
+        }
+
+        public ViewModelDesktopWindow(DesktopWindow desktopWindow)
+        {
+            AppName = desktopWindow.AppName;
+            ClassName = desktopWindow.ClassName;
+            Monitor = desktopWindow.Monitor.ToString() ?? "empty";
+            VirtualDesktop = desktopWindow.VirtualDesktop.Id.ToString();
+            Window = desktopWindow.Window.DangerousGetHandle().ToString();
         }
 
         public override bool Equals(object? obj)

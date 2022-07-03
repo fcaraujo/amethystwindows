@@ -82,9 +82,9 @@ namespace AmethystWindows.Models
 
             // TODO move this settings into the service
             MySettings.Load();
-            _configurableFilters = MySettings.Instance.Filters;
-            _configurableAdditions = MySettings.Instance.Additions;
-            _desktopMonitors = new ObservableDesktopMonitors(MySettings.Instance.DesktopMonitors);
+            _configurableFilters = MySettings.Instance?.Filters ?? new();
+            _configurableAdditions = MySettings.Instance?.Additions ?? new();
+            _desktopMonitors = new ObservableDesktopMonitors(MySettings.Instance?.DesktopMonitors ?? new());
 
 
 
@@ -120,7 +120,17 @@ namespace AmethystWindows.Models
 
         private void _desktopMonitors_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            DesktopMonitorViewModel viewModelDesktopMonitor = (DesktopMonitorViewModel)e.NewItems[0];
+            var desktopMonitorViewModel = e.NewItems?.Count > 0
+                ? e.NewItems[0]
+                : null;
+
+            if (desktopMonitorViewModel is null)
+            {
+                // TODO log warn?
+                return;
+            }
+
+            var viewModelDesktopMonitor = (DesktopMonitorViewModel)desktopMonitorViewModel;
             LastChangedDesktopMonitor = viewModelDesktopMonitor.GetPair();
             OnPropertyChanged("DesktopMonitors");
         }
@@ -316,32 +326,36 @@ namespace AmethystWindows.Models
         public void UpdateWindows()
         {
             // TODO use DI to get DWM
-            var dwm = IocProvider.GetService<DesktopService>();
+            var desktopService = IocProvider.GetService<DesktopService>();
 
-            List<DesktopWindow> desktopWindows = dwm.GetWindowsByVirtualDesktop(VirtualDesktop.Current);
-            List<ViewModelDesktopWindow> windowsForComparison = desktopWindows.Select(window => new ViewModelDesktopWindow(
-                window.Window.DangerousGetHandle().ToString(),
-                window.AppName,
-                window.ClassName,
-                window.VirtualDesktop.Id.ToString(),
-                window.Monitor.ToString()
-                )).ToList();
+            var desktopWindows = desktopService.GetWindowsByVirtualDesktop(VirtualDesktop.Current);
+
+            var windowsForComparison = desktopWindows
+                .Select(window => new ViewModelDesktopWindow(window))
+                .ToList();
 
             if (!windowsForComparison.SequenceEqual(Windows))
+            {
                 Windows = windowsForComparison;
+            }
         }
 
         public void UpdateExcludedWindows()
         {
             // TODO use DI to get DWM
-            var dwm = IocProvider.GetService<DesktopService>();
+            var desktopService = IocProvider.GetService<DesktopService>();
 
-            List<ViewModelDesktopWindow> windowsForComparison = dwm.ExcludedWindows.Select(window => new ViewModelDesktopWindow(
-                window.AppName,
-                window.ClassName
-                )).ToList();
+            var windowsForComparison = desktopService.ExcludedWindows
+                .Select(window => new ViewModelDesktopWindow(
+                    window.AppName,
+                    window.ClassName
+                ))
+                .ToList();
 
-            if (!windowsForComparison.SequenceEqual(ExcludedWindows)) ExcludedWindows = windowsForComparison;
+            if (!windowsForComparison.SequenceEqual(ExcludedWindows))
+            {
+                ExcludedWindows = windowsForComparison;
+            }
         }
 
         public void FilterApp()
