@@ -114,7 +114,7 @@ namespace AmethystWindows.Models
         private void Redraw()
         {
             // DWM is a circular dependency, let's think how to simplify this shit
-            var dwm = IocProvider.GetService<DesktopService>();
+            var dwm = IocProvider.GetService<IDesktopService>();
             dwm.Redraw();
         }
 
@@ -326,7 +326,7 @@ namespace AmethystWindows.Models
         public void UpdateWindows()
         {
             // TODO use DI to get DWM
-            var desktopService = IocProvider.GetService<DesktopService>();
+            var desktopService = IocProvider.GetService<IDesktopService>();
 
             var desktopWindows = desktopService.GetWindowsByVirtualDesktop(VirtualDesktop.Current);
 
@@ -343,7 +343,7 @@ namespace AmethystWindows.Models
         public void UpdateExcludedWindows()
         {
             // TODO use DI to get DWM
-            var desktopService = IocProvider.GetService<DesktopService>();
+            var desktopService = IocProvider.GetService<IDesktopService>();
 
             var windowsForComparison = desktopService.ExcludedWindows
                 .Select(window => new ViewModelDesktopWindow(

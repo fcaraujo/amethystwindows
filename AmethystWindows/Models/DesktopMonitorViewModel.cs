@@ -11,7 +11,7 @@ namespace AmethystWindows.Models
     public class DesktopMonitorViewModel : INotifyPropertyChanged
     {
         private HMONITOR _monitor;
-        private VirtualDesktop _virtualDesktop = VirtualDesktop.Create();
+        private VirtualDesktop? _virtualDesktop;
         private int _factor;
         private Layout _layout;
 
@@ -34,7 +34,7 @@ namespace AmethystWindows.Models
             }
         }
 
-        public VirtualDesktop VirtualDesktop
+        public VirtualDesktop? VirtualDesktop
         {
             get => _virtualDesktop;
 

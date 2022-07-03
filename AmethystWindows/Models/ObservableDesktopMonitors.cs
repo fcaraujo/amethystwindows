@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -53,7 +52,17 @@ namespace AmethystWindows.Models
 
         private DesktopMonitorViewModel FindByDesktopMonitor(Pair<VirtualDesktop, HMONITOR> desktopMonitor)
         {
-            return this.First(viewModelDesktopMonitor => viewModelDesktopMonitor.Monitor.Equals(desktopMonitor.Value) && viewModelDesktopMonitor.VirtualDesktop.Equals(desktopMonitor.Key));
+            return this.First(viewModelDesktopMonitor =>
+            {
+                var virtualDesktop = viewModelDesktopMonitor.VirtualDesktop;
+
+                if (virtualDesktop is null)
+                {
+                    return false;
+                }
+
+                return viewModelDesktopMonitor.Monitor.Equals(desktopMonitor.Value) && virtualDesktop.Equals(desktopMonitor.Key);
+            });
         }
     }
 }

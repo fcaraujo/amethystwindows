@@ -17,19 +17,33 @@ using WindowsDesktop;
 [assembly: InternalsVisibleTo("AmethystWindowsTests")]
 namespace AmethystWindows.Services
 {
-    // TODO decouple services into desktop and windows management
-    public class DesktopService
+    // TODO decouple services into desktop and windows management? (C'mon ~1k lines?!)
+    public interface IDesktopService
+    {
+        ObservableCollection<DesktopWindow> ExcludedWindows { get; }
+        string[] FixedExcludedFilters { get; }
+
+        void AddWindow(DesktopWindow desktopWindow);
+        void CollectWindows();
+        void Dispatch(CommandHotkey command);
+        void Draw();
+        DesktopWindow? FindWindow(HWND hWND);
+        List<DesktopWindow> GetWindowsByVirtualDesktop(VirtualDesktop virtualDesktop);
+        IEnumerable<Rectangle> GridGenerator(int mWidth, int mHeight, int windowsCount, int factor, Layout layout, int layoutPadding);
+        void Redraw();
+        void RemoveWindow(DesktopWindow desktopWindow);
+        void RepositionWindow(DesktopWindow oldDesktopWindow, DesktopWindow newDesktopWindow);
+    }
+
+    public class DesktopService : IDesktopService
     {
         private readonly ILogger _logger;
         private readonly ISettingsService _settingsService;
 
-        // TODO turn this private and restrict its access?
-        public readonly MainWindowViewModel _mainWindowViewModel;
+        private readonly MainWindowViewModel _mainWindowViewModel;
 
-        public Dictionary<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> Windows { get; }
-        public Dictionary<Pair<VirtualDesktop, HMONITOR>, bool> WindowsSubscribed = new Dictionary<Pair<VirtualDesktop, HMONITOR>, bool>();
-
-        public ObservableCollection<DesktopWindow> ExcludedWindows { get; }
+        private Dictionary<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> Windows { get; }
+        private Dictionary<Pair<VirtualDesktop, HMONITOR>, bool> WindowsSubscribed = new Dictionary<Pair<VirtualDesktop, HMONITOR>, bool>();
 
         private DebounceDispatcher debounceDispatcher = new DebounceDispatcher(100);
 
@@ -39,10 +53,6 @@ namespace AmethystWindows.Services
             "Cortana",
             "Microsoft Spy++",
             "Task Manager",
-        };
-
-        public readonly string[] FixedExcludedFilters = new string[] {
-            "Settings",
         };
 
         private readonly string[] ModelViewPropertiesDraw = new string[] {
@@ -77,6 +87,14 @@ namespace AmethystWindows.Services
             "Hotkeys",
         };
 
+
+        // TODO turn this private and restrict its access?
+        public ObservableCollection<DesktopWindow> ExcludedWindows { get; }
+
+        public string[] FixedExcludedFilters => new string[] {
+            "Settings",
+        };
+
         public DesktopService(ILogger logger, ISettingsService settingsService, MainWindowViewModel amainWindowViewModel)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -90,166 +108,13 @@ namespace AmethystWindows.Services
             _mainWindowViewModel.PropertyChanged += MainWindowViewModel_PropertyChanged;
         }
 
-        private void ExcludedWindows_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-        {
-            if (!System.Windows.Application.Current.MainWindow.Equals(null))
-            {
-                _mainWindowViewModel.UpdateExcludedWindows();
-            }
-        }
-
-        private void MainWindowViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            _logger.Debug($"ModelViewChanged: {e.PropertyName}");
-
-            if (e.PropertyName == "VirtualDesktops")
-            {
-                // TODO check how to use DI here...?
-                App.InitVirtualDesktops();
-            }
-
-            // TODO check if saving hotkeys on the event is enough
-            //if (e.PropertyName == "Hotkeys")
-            //{
-            //    // TODO add dependency of HooksService in this class retrieve it
-            //    var _hooksService = IocProvider.GetService<HooksService>();
-            //    _hooksService.ClearHotkeys();
-            //    _hooksService.SetKeyboardHook();
-
-            //    _settingsService.SetHotkeyOptions(mainWindowViewModel);
-            //    _settingsService.Save();
-            //}
-
-            if (ModelViewPropertiesSaveSettings.Contains(e.PropertyName))
-            {
-                var i = MySettings.Instance ?? throw new ArgumentNullException(nameof(MySettings.Instance));
-
-                // TODO handle
-                MySettings.Instance.Filters = _mainWindowViewModel.ConfigurableFilters;
-                MySettings.Instance.Additions = _mainWindowViewModel.ConfigurableAdditions;
-                MySettings.Instance.DesktopMonitors = _mainWindowViewModel.DesktopMonitors.ToList();
-
-                MySettings.Save();
-
-
-                _settingsService.SetSettingsOptions(_mainWindowViewModel);
-
-                // TODO check it's been called every layout rotation?
-                _settingsService.Save();
-            }
-
-            if (e.PropertyName == "ConfigurableFilters" || e.PropertyName == "ConfigurableAdditions")
-            {
-                ClearWindows();
-                CollectWindows();
-            }
-
-            if (ModelViewPropertiesDraw.Contains(e.PropertyName))
-            {
-                if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) && _mainWindowViewModel.LastChangedDesktopMonitor.Key != null) debounceDispatcher.Debounce(() => Draw(_mainWindowViewModel.LastChangedDesktopMonitor));
-                else debounceDispatcher.Debounce(() => Draw());
-            }
-        }
-
-        private void RotateMonitorClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
-        {
-            var virtualDesktopMonitors = GetVirtualDesktopMonitors(currentDesktopMonitor);
-
-            var nextMonitor = virtualDesktopMonitors
-                .SkipWhile(x => x != currentDesktopMonitor.Value)
-                .Skip(1)
-                .DefaultIfEmpty(virtualDesktopMonitors[0])
-                .FirstOrDefault();
-
-            var nextDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(currentDesktopMonitor.Key, nextMonitor);
-            SetForegroundWindow(nextDesktopMonitor);
-        }
-
-        private void RotateMonitorCounterClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
-        {
-            var virtualDesktopMonitors = GetVirtualDesktopMonitors(currentDesktopMonitor);
-
-            var nextMonitor = virtualDesktopMonitors
-                .TakeWhile(x => x != currentDesktopMonitor.Value)
-                .Skip(1)
-                .DefaultIfEmpty(virtualDesktopMonitors[0])
-                .FirstOrDefault();
-
-            var nextDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(currentDesktopMonitor.Key, nextMonitor);
-            SetForegroundWindow(nextDesktopMonitor);
-        }
-
-        private List<HMONITOR> GetVirtualDesktopMonitors(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
-        {
-            return Windows
-                .Keys
-                .Where(desktopMonitor =>
-                {
-                    var desktopMonitorKey = desktopMonitor.Key ?? throw new ArgumentNullException(nameof(desktopMonitor.Key));
-                    var result = desktopMonitorKey.Equals(currentDesktopMonitor.Key);
-                    return result;
-                })
-                .Select(desktopMonitor => desktopMonitor.Value)
-                .ToList();
-        }
-
-        private void SetForegroundWindow(Pair<VirtualDesktop, HMONITOR> nextDesktopMonitor)
-        {
-            var desktopWindow = Windows[nextDesktopMonitor].FirstOrDefault() ?? throw new ArgumentNullException();
-            User32.SetForegroundWindow(desktopWindow.Window);
-        }
-
-        private void SubscribeWindowsCollectionChanged(Pair<VirtualDesktop, HMONITOR> desktopMonitor, bool enabled)
-        {
-            if (!enabled)
-                Windows[desktopMonitor].CollectionChanged -= Windows_CollectionChanged;
-            else if (!WindowsSubscribed[desktopMonitor])
-                Windows[desktopMonitor].CollectionChanged += Windows_CollectionChanged;
-
-            WindowsSubscribed[desktopMonitor] = enabled;
-        }
-
-        // Previously from *.DRAW
-        public void Draw(Pair<VirtualDesktop, HMONITOR> key)
-        {
-            if (_mainWindowViewModel.Disabled)
-                return;
-
-            ObservableCollection<DesktopWindow> windows = Windows[key];
-            KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> desktopMonitor = new KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>(key, windows);
-            int mX, mY;
-            IEnumerable<Rectangle> gridGenerator;
-            DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
-
-            foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-            {
-                User32.ShowWindow(w.Item2.Window, ShowWindowCommand.SW_RESTORE);
-            }
-
-            HDWP hDWP1 = User32.BeginDeferWindowPos(windows.Count);
-            foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-            {
-                Rectangle adjustedSize = new Rectangle(
-                    gridGenerator.ToArray()[w.Item1].X,
-                    gridGenerator.ToArray()[w.Item1].Y,
-                    gridGenerator.ToArray()[w.Item1].Width,
-                    gridGenerator.ToArray()[w.Item1].Height
-                );
-
-                DrawWindow(mX, mY, adjustedSize, w, hDWP1, windows.Count);
-            }
-            User32.EndDeferWindowPos(hDWP1.DangerousGetHandle());
-
-            foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-            {
-                w.Item2.GetWindowInfo();
-            }
-        }
-
         public void Draw()
         {
             if (_mainWindowViewModel.Disabled)
+            {
+                _logger.Warning("Skipping draw as it's disabled.");
                 return;
+            }
 
             foreach (var desktopMonitor in Windows)
             {
@@ -282,69 +147,6 @@ namespace AmethystWindows.Services
                 }
             }
         }
-
-        private void DrawMonitor(KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> desktopMonitor, out int mX, out int mY, out IEnumerable<Rectangle> gridGenerator)
-        {
-            HMONITOR m = desktopMonitor.Key.Value;
-            int windowsCount = desktopMonitor.Value.Count;
-
-            User32.MONITORINFO info = new User32.MONITORINFO();
-            info.cbSize = (uint)Marshal.SizeOf(info);
-            User32.GetMonitorInfo(m, ref info);
-
-            mX = info.rcWork.X + _mainWindowViewModel.MarginLeft;
-            mY = info.rcWork.Y + _mainWindowViewModel.MarginTop;
-            int mWidth = info.rcWork.Width - _mainWindowViewModel.MarginLeft - _mainWindowViewModel.MarginRight;
-            int mHeight = info.rcWork.Height - _mainWindowViewModel.MarginTop - _mainWindowViewModel.MarginBottom;
-
-            Layout mCurrentLayout;
-            int mCurrentFactor;
-            try
-            {
-                mCurrentLayout = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Layout;
-                mCurrentFactor = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Factor;
-            }
-            // WTF exception based flow...?
-            catch
-            {
-                var virtualDesktop = desktopMonitor.Key.Key ?? throw new ArgumentNullException();
-
-                _mainWindowViewModel.DesktopMonitors
-                    .Add(new DesktopMonitorViewModel(
-                        desktopMonitor.Key.Value,
-                        virtualDesktop,
-                        0,
-                        Layout.Tall
-                    ));
-                mCurrentLayout = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Layout;
-                mCurrentFactor = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Factor;
-            }
-
-            gridGenerator = GridGenerator(mWidth, mHeight, windowsCount, mCurrentFactor, mCurrentLayout, _mainWindowViewModel.LayoutPadding);
-        }
-
-        private void DrawWindow(int mX, int mY, Rectangle adjustedSize, Tuple<int, DesktopWindow> w, HDWP hDWP, int windowsCount)
-        {
-            int X = mX + adjustedSize.X - w.Item2.BorderX / 2 + _mainWindowViewModel.Padding;
-            int Y = mY + adjustedSize.Y - w.Item2.BorderY / 2 + _mainWindowViewModel.Padding;
-
-            Y = Y <= mY ? mY : Y;
-
-            User32.DeferWindowPos(
-                hDWP,
-                w.Item2.Window,
-                HWND.HWND_NOTOPMOST,
-                X,
-                Y,
-                adjustedSize.Width + w.Item2.BorderX - 2 * _mainWindowViewModel.Padding,
-                adjustedSize.Height + w.Item2.BorderY - 2 * _mainWindowViewModel.Padding,
-                User32.SetWindowPosFlags.SWP_NOACTIVATE |
-                User32.SetWindowPosFlags.SWP_NOCOPYBITS |
-                User32.SetWindowPosFlags.SWP_NOZORDER |
-                User32.SetWindowPosFlags.SWP_NOOWNERZORDER
-                );
-        }
-
 
         // Previously from *.GENERATOR
         public IEnumerable<Rectangle> GridGenerator(int mWidth, int mHeight, int windowsCount, int factor, Layout layout, int layoutPadding)
@@ -521,8 +323,6 @@ namespace AmethystWindows.Services
                     break;
             }
         }
-
-
         // Previously from *.WINDOW
         public void Dispatch(CommandHotkey command)
         {
@@ -541,6 +341,12 @@ namespace AmethystWindows.Services
             var findWindow = FindWindow(foregroundWindow);
 
             _logger.Debug($"Dispatch {{Command}}", command);
+
+            if (findWindow is null)
+            {
+                _logger.Error("No window is found, is that a problem?");
+                return;
+            }
 
             switch (command)
             {
@@ -563,7 +369,7 @@ namespace AmethystWindows.Services
                 case CommandHotkey.MoveFocusedToSpace3:
                 case CommandHotkey.MoveFocusedToSpace4:
                 case CommandHotkey.MoveFocusedToSpace5:
-                    MoveWindowSpecificVirtualDesktop(findWindow, findWindow.VirtualDesktop.Id);
+                    MoveWindowSpecificVirtualDesktop(findWindow, findWindow.VirtualDesktop?.Id);
                     break;
 
                 case CommandHotkey.MoveNextSpace:
@@ -718,25 +524,240 @@ namespace AmethystWindows.Services
             Draw();
         }
 
-        private void ClearWindows()
-        {
-            foreach (var desktopMonitor in Windows)
-            {
-                desktopMonitor.Value.Clear();
-            }
-        }
-
-        public DesktopWindow FindWindow(HWND hWND)
+        public DesktopWindow? FindWindow(HWND hWND)
         {
             List<DesktopWindow> desktopWindows = new List<DesktopWindow>();
             foreach (var desktopMonitor in Windows)
             {
                 desktopWindows.AddRange(Windows[new Pair<VirtualDesktop, HMONITOR>(desktopMonitor.Key.Key, desktopMonitor.Key.Value)].Where(window => window.Window == hWND));
             }
+            return desktopWindows.FirstOrDefault();
+        }
 
-            // TODO check how to handle null pointer?
-            var window = desktopWindows.FirstOrDefault() ?? throw new ArgumentNullException();
-            return window;
+        private void ExcludedWindows_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (!System.Windows.Application.Current.MainWindow.Equals(null))
+            {
+                _mainWindowViewModel.UpdateExcludedWindows();
+            }
+        }
+
+        private void MainWindowViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            _logger.Debug($"ModelViewChanged: {e.PropertyName}");
+
+            if (e.PropertyName == "VirtualDesktops")
+            {
+                // TODO check how to use DI here...?
+                App.InitVirtualDesktops();
+            }
+
+            // TODO check if saving hotkeys on the event is enough
+            //if (e.PropertyName == "Hotkeys")
+            //{
+            //    // TODO add dependency of HooksService in this class retrieve it
+            //    var _hooksService = IocProvider.GetService<HooksService>();
+            //    _hooksService.ClearHotkeys();
+            //    _hooksService.SetKeyboardHook();
+
+            //    _settingsService.SetHotkeyOptions(mainWindowViewModel);
+            //    _settingsService.Save();
+            //}
+
+            if (ModelViewPropertiesSaveSettings.Contains(e.PropertyName))
+            {
+                var i = MySettings.Instance ?? throw new ArgumentNullException(nameof(MySettings.Instance));
+
+                // TODO handle
+                MySettings.Instance.Filters = _mainWindowViewModel.ConfigurableFilters;
+                MySettings.Instance.Additions = _mainWindowViewModel.ConfigurableAdditions;
+                MySettings.Instance.DesktopMonitors = _mainWindowViewModel.DesktopMonitors.ToList();
+
+                MySettings.Save();
+
+
+                _settingsService.SetSettingsOptions(_mainWindowViewModel);
+
+                // TODO check it's been called every layout rotation?
+                _settingsService.Save();
+            }
+
+            if (e.PropertyName == "ConfigurableFilters" || e.PropertyName == "ConfigurableAdditions")
+            {
+                ClearWindows();
+                CollectWindows();
+            }
+
+            if (ModelViewPropertiesDraw.Contains(e.PropertyName))
+            {
+                if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) && _mainWindowViewModel.LastChangedDesktopMonitor.Key != null) debounceDispatcher.Debounce(() => Draw(_mainWindowViewModel.LastChangedDesktopMonitor));
+                else debounceDispatcher.Debounce(() => Draw());
+            }
+        }
+
+        private void RotateMonitorClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
+        {
+            var virtualDesktopMonitors = GetVirtualDesktopMonitors(currentDesktopMonitor);
+
+            var nextMonitor = virtualDesktopMonitors
+                .SkipWhile(x => x != currentDesktopMonitor.Value)
+                .Skip(1)
+                .DefaultIfEmpty(virtualDesktopMonitors[0])
+                .FirstOrDefault();
+
+            var nextDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(currentDesktopMonitor.Key, nextMonitor);
+            SetForegroundWindow(nextDesktopMonitor);
+        }
+
+        private void RotateMonitorCounterClockwise(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
+        {
+            var virtualDesktopMonitors = GetVirtualDesktopMonitors(currentDesktopMonitor);
+
+            var nextMonitor = virtualDesktopMonitors
+                .TakeWhile(x => x != currentDesktopMonitor.Value)
+                .Skip(1)
+                .DefaultIfEmpty(virtualDesktopMonitors[0])
+                .FirstOrDefault();
+
+            var nextDesktopMonitor = new Pair<VirtualDesktop, HMONITOR>(currentDesktopMonitor.Key, nextMonitor);
+            SetForegroundWindow(nextDesktopMonitor);
+        }
+
+        private List<HMONITOR> GetVirtualDesktopMonitors(Pair<VirtualDesktop, HMONITOR> currentDesktopMonitor)
+        {
+            return Windows
+                .Keys
+                .Where(desktopMonitor =>
+                {
+                    var desktopMonitorKey = desktopMonitor.Key ?? throw new ArgumentNullException(nameof(desktopMonitor.Key));
+                    var result = desktopMonitorKey.Equals(currentDesktopMonitor.Key);
+                    return result;
+                })
+                .Select(desktopMonitor => desktopMonitor.Value)
+                .ToList();
+        }
+
+        private void SetForegroundWindow(Pair<VirtualDesktop, HMONITOR> nextDesktopMonitor)
+        {
+            var desktopWindow = Windows[nextDesktopMonitor].FirstOrDefault() ?? throw new ArgumentNullException();
+            User32.SetForegroundWindow(desktopWindow.Window);
+        }
+
+        private void SubscribeWindowsCollectionChanged(Pair<VirtualDesktop, HMONITOR> desktopMonitor, bool enabled)
+        {
+            if (!enabled)
+                Windows[desktopMonitor].CollectionChanged -= Windows_CollectionChanged;
+            else if (!WindowsSubscribed[desktopMonitor])
+                Windows[desktopMonitor].CollectionChanged += Windows_CollectionChanged;
+
+            WindowsSubscribed[desktopMonitor] = enabled;
+        }
+
+        // Previously from *.DRAW
+        private void Draw(Pair<VirtualDesktop, HMONITOR> key)
+        {
+            if (_mainWindowViewModel.Disabled)
+                return;
+
+            ObservableCollection<DesktopWindow> windows = Windows[key];
+            KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> desktopMonitor = new KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>(key, windows);
+            int mX, mY;
+            IEnumerable<Rectangle> gridGenerator;
+            DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
+
+            foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+            {
+                User32.ShowWindow(w.Item2.Window, ShowWindowCommand.SW_RESTORE);
+            }
+
+            HDWP hDWP1 = User32.BeginDeferWindowPos(windows.Count);
+            foreach (var w in windows.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+            {
+                Rectangle adjustedSize = new Rectangle(
+                    gridGenerator.ToArray()[w.Item1].X,
+                    gridGenerator.ToArray()[w.Item1].Y,
+                    gridGenerator.ToArray()[w.Item1].Width,
+                    gridGenerator.ToArray()[w.Item1].Height
+                );
+
+                DrawWindow(mX, mY, adjustedSize, w, hDWP1, windows.Count);
+            }
+            User32.EndDeferWindowPos(hDWP1.DangerousGetHandle());
+
+            foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+            {
+                w.Item2.GetWindowInfo();
+            }
+        }
+
+        private void DrawMonitor(KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> desktopMonitor, out int mX, out int mY, out IEnumerable<Rectangle> gridGenerator)
+        {
+            HMONITOR m = desktopMonitor.Key.Value;
+            int windowsCount = desktopMonitor.Value.Count;
+
+            User32.MONITORINFO info = new User32.MONITORINFO();
+            info.cbSize = (uint)Marshal.SizeOf(info);
+            User32.GetMonitorInfo(m, ref info);
+
+            mX = info.rcWork.X + _mainWindowViewModel.MarginLeft;
+            mY = info.rcWork.Y + _mainWindowViewModel.MarginTop;
+            int mWidth = info.rcWork.Width - _mainWindowViewModel.MarginLeft - _mainWindowViewModel.MarginRight;
+            int mHeight = info.rcWork.Height - _mainWindowViewModel.MarginTop - _mainWindowViewModel.MarginBottom;
+
+            Layout mCurrentLayout;
+            int mCurrentFactor;
+            try
+            {
+                mCurrentLayout = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Layout;
+                mCurrentFactor = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Factor;
+            }
+            // WTF exception based flow...?
+            catch
+            {
+                var virtualDesktop = desktopMonitor.Key.Key ?? throw new ArgumentNullException();
+
+                _mainWindowViewModel.DesktopMonitors
+                    .Add(new DesktopMonitorViewModel(
+                        desktopMonitor.Key.Value,
+                        virtualDesktop,
+                        0,
+                        Layout.Tall
+                    ));
+                mCurrentLayout = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Layout;
+                mCurrentFactor = _mainWindowViewModel.DesktopMonitors[desktopMonitor.Key].Factor;
+            }
+
+            gridGenerator = GridGenerator(mWidth, mHeight, windowsCount, mCurrentFactor, mCurrentLayout, _mainWindowViewModel.LayoutPadding);
+        }
+
+        private void DrawWindow(int mX, int mY, Rectangle adjustedSize, Tuple<int, DesktopWindow> w, HDWP hDWP, int windowsCount)
+        {
+            int X = mX + adjustedSize.X - w.Item2.BorderX / 2 + _mainWindowViewModel.Padding;
+            int Y = mY + adjustedSize.Y - w.Item2.BorderY / 2 + _mainWindowViewModel.Padding;
+
+            Y = Y <= mY ? mY : Y;
+
+            User32.DeferWindowPos(
+                hDWP,
+                w.Item2.Window,
+                HWND.HWND_NOTOPMOST,
+                X,
+                Y,
+                adjustedSize.Width + w.Item2.BorderX - 2 * _mainWindowViewModel.Padding,
+                adjustedSize.Height + w.Item2.BorderY - 2 * _mainWindowViewModel.Padding,
+                User32.SetWindowPosFlags.SWP_NOACTIVATE |
+                User32.SetWindowPosFlags.SWP_NOCOPYBITS |
+                User32.SetWindowPosFlags.SWP_NOZORDER |
+                User32.SetWindowPosFlags.SWP_NOOWNERZORDER
+                );
+        }
+
+        private void ClearWindows()
+        {
+            foreach (var desktopMonitor in Windows)
+            {
+                desktopMonitor.Value.Clear();
+            }
         }
 
         private void Windows_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -914,7 +935,7 @@ namespace AmethystWindows.Services
 
         private void MoveWindowNextVirtualDesktop(DesktopWindow window)
         {
-            var nextVirtualDesktop = window.VirtualDesktop.GetRight();
+            var nextVirtualDesktop = window.VirtualDesktop?.GetRight();
             if (nextVirtualDesktop != null)
             {
                 RemoveWindow(window);
@@ -927,7 +948,7 @@ namespace AmethystWindows.Services
 
         private void MoveWindowPreviousVirtualDesktop(DesktopWindow window)
         {
-            var nextVirtualDesktop = window.VirtualDesktop.GetLeft();
+            var nextVirtualDesktop = window.VirtualDesktop?.GetLeft();
             if (nextVirtualDesktop != null)
             {
                 RemoveWindow(window);
@@ -938,9 +959,14 @@ namespace AmethystWindows.Services
             }
         }
 
-        private void MoveWindowSpecificVirtualDesktop(DesktopWindow window, Guid desktopGuid)
+        private void MoveWindowSpecificVirtualDesktop(DesktopWindow window, Guid? desktopGuid)
         {
-            var nextVirtualDesktop = VirtualDesktop.FromId(desktopGuid);
+            if(window is null || desktopGuid is null)
+            {
+                return;
+            }
+
+            var nextVirtualDesktop = VirtualDesktop.FromId(desktopGuid.GetValueOrDefault());
             if (nextVirtualDesktop != null)
             {
                 RemoveWindow(window);

@@ -27,10 +27,13 @@ namespace AmethystWindows.Models
 
         public ViewModelDesktopWindow(DesktopWindow desktopWindow)
         {
+            var virtualDesktopGuid = desktopWindow.VirtualDesktop?.Id;
+            var virtualDesktop = virtualDesktopGuid.GetValueOrDefault().ToString();
+
             AppName = desktopWindow.AppName;
             ClassName = desktopWindow.ClassName;
             Monitor = desktopWindow.Monitor.ToString() ?? "empty";
-            VirtualDesktop = desktopWindow.VirtualDesktop.Id.ToString();
+            VirtualDesktop = virtualDesktop;
             Window = desktopWindow.Window.DangerousGetHandle().ToString();
         }
 

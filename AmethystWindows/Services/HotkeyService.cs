@@ -22,13 +22,12 @@ namespace AmethystWindows.Services
     public class HotkeyService : IHotkeyService
     {
         private readonly ILogger _logger;
-        private readonly DesktopService _desktopWindowsManager;
+        private readonly IDesktopService _desktopWindowsManager;
         private readonly MainWindowViewModel _mainWindowViewModel;
         private readonly ISettingsService _settingsService;
         private readonly HWND _windowHandler;
 
-
-        public HotkeyService(ILogger logger, DesktopService desktopWindowsManager, MainWindow mainWindow, MainWindowViewModel mainWindowViewModel, ISettingsService settingsService)
+        public HotkeyService(ILogger logger, IDesktopService desktopWindowsManager, MainWindow mainWindow, MainWindowViewModel mainWindowViewModel, ISettingsService settingsService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _desktopWindowsManager = desktopWindowsManager ?? throw new ArgumentNullException(nameof(desktopWindowsManager));
@@ -57,8 +56,8 @@ namespace AmethystWindows.Services
                         case EventConstants.EVENT_SYSTEM_MINIMIZEEND:
                             _logger.Debug($"window maximized");
                             desktopWindow.GetInfo();
-                            _desktopWindowsManager._mainWindowViewModel.LastChangedDesktopMonitor = desktopWindow.GetDesktopMonitor();
-                            Pair<string, string> configurableAddition = _desktopWindowsManager._mainWindowViewModel.ConfigurableAdditions.FirstOrDefault(f => f.Key == desktopWindow.AppName);
+                            _mainWindowViewModel.LastChangedDesktopMonitor = desktopWindow.GetDesktopMonitor();
+                            Pair<string, string> configurableAddition = _mainWindowViewModel.ConfigurableAdditions.FirstOrDefault(f => f.Key == desktopWindow.AppName);
                             bool hasActiveAddition;
                             if (!(configurableAddition.Key == null))
                             {
@@ -74,17 +73,17 @@ namespace AmethystWindows.Services
                         case EventConstants.EVENT_OBJECT_HIDE:
                         case EventConstants.EVENT_OBJECT_IME_HIDE:
                             _logger.Debug($"window minimized/hide");
-                            DesktopWindow removed = _desktopWindowsManager.FindWindow(hwnd);
+                            var removed = _desktopWindowsManager.FindWindow(hwnd);
                             if (removed != null)
                             {
-                                _desktopWindowsManager._mainWindowViewModel.LastChangedDesktopMonitor = removed.GetDesktopMonitor();
+                                _mainWindowViewModel.LastChangedDesktopMonitor = removed.GetDesktopMonitor();
                                 _desktopWindowsManager.RemoveWindow(removed);
                             }
                             break;
                         case EventConstants.EVENT_SYSTEM_MOVESIZEEND:
                             _logger.Debug($"window move/size");
-                            _desktopWindowsManager._mainWindowViewModel.LastChangedDesktopMonitor = new Pair<WindowsDesktop.VirtualDesktop, HMONITOR>(null, new HMONITOR());
-                            DesktopWindow moved = _desktopWindowsManager.FindWindow(hwnd);
+                            _mainWindowViewModel.LastChangedDesktopMonitor = new Pair<WindowsDesktop.VirtualDesktop, HMONITOR>(null, new HMONITOR());
+                            var moved = _desktopWindowsManager.FindWindow(hwnd);
                             if (moved != null)
                             {
                                 DesktopWindow newMoved = new DesktopWindow(hwnd);
@@ -160,8 +159,8 @@ namespace AmethystWindows.Services
             await Task.Delay(500);
             DesktopWindow desktopWindow = new DesktopWindow(hWND);
             desktopWindow.GetInfo();
-            _desktopWindowsManager._mainWindowViewModel.LastChangedDesktopMonitor = desktopWindow.GetDesktopMonitor();
-            Pair<string, string> configurableAddition = _desktopWindowsManager._mainWindowViewModel.ConfigurableAdditions.FirstOrDefault(f => f.Key == desktopWindow.AppName);
+            _mainWindowViewModel.LastChangedDesktopMonitor = desktopWindow.GetDesktopMonitor();
+            Pair<string, string> configurableAddition = _mainWindowViewModel.ConfigurableAdditions.FirstOrDefault(f => f.Key == desktopWindow.AppName);
             bool hasActiveAddition;
             if (!(configurableAddition.Key == null))
             {

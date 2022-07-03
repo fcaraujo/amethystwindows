@@ -46,7 +46,7 @@ namespace AmethystWindows.Models.Converters
                 writer.WriteStartObject();
 
                 writer.WritePropertyName(DESKTOPID);
-                writer.WriteValue(desktopMonitor.VirtualDesktop.Id);
+                writer.WriteValue(desktopMonitor.VirtualDesktop?.Id);
 
                 writer.WritePropertyName(MONITORX);
                 writer.WriteValue(info.rcMonitor.X);

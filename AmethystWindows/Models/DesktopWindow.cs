@@ -11,7 +11,7 @@ namespace AmethystWindows.Models
 {
     public class DesktopWindow
     {
-        public VirtualDesktop VirtualDesktop { get; set; } = VirtualDesktop.Create();
+        public VirtualDesktop? VirtualDesktop { get; set; }
         public User32.MONITORINFO Monitor { get; set; }
         public HMONITOR MonitorHandle { get; set; }
         public HWND Window { get; set; }

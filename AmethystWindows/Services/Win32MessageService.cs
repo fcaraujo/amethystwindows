@@ -14,11 +14,11 @@ namespace AmethystWindows.Services
 
     public class Win32MessageService : IWin32MessageService
     {
-        private readonly DesktopService _desktopWindowsManager;
+        private readonly IDesktopService _desktopWindowsManager;
         private readonly ILogger _logger;
         private readonly MainWindowViewModel _mainWindowViewModel;
 
-        public Win32MessageService(DesktopService desktopWindowsManager, ILogger logger, MainWindowViewModel mainWindowViewModel)
+        public Win32MessageService(IDesktopService desktopWindowsManager, ILogger logger, MainWindowViewModel mainWindowViewModel)
         {
             _desktopWindowsManager = desktopWindowsManager ?? throw new ArgumentNullException(nameof(desktopWindowsManager));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

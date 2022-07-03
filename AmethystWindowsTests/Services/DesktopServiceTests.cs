@@ -18,7 +18,7 @@ namespace AmethystWindowsTests.Services
         private readonly Mock<ISettingsService> settingsServiceMock = new();
         private readonly MainWindowViewModel mainWindowViewModel;
 
-        private readonly DesktopService _sut;
+        private readonly IDesktopService _sut;
 
         private Layout layout;
 
