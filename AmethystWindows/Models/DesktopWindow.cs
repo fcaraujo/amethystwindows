@@ -11,17 +11,17 @@ namespace AmethystWindows.Models
 {
     public class DesktopWindow
     {
-        public VirtualDesktop VirtualDesktop { get; set; }
+        public VirtualDesktop VirtualDesktop { get; set; } = VirtualDesktop.Create();
         public User32.MONITORINFO Monitor { get; set; }
         public HMONITOR MonitorHandle { get; set; }
         public HWND Window { get; set; }
         public User32.WINDOWINFO Info { get; set; }
-        public string AppName { get; set; }
+        public string AppName { get; set; } = string.Empty;
         public int BorderX;
         public int BorderY;
         public int OffsetX;
         public int OffsetY;
-        public string ClassName { get; set; }
+        public string ClassName { get; set; } = string.Empty;
         public bool IsUWP { get; set; }
 
         private static readonly string[] WindowsClassNamesToSkip =
@@ -153,8 +153,13 @@ namespace AmethystWindows.Models
 
         public void GetVirtualDesktop()
         {
-            VirtualDesktop virtualDesktop = VirtualDesktop.FromHwnd(Window.DangerousGetHandle());
-            if (virtualDesktop == null) virtualDesktop = VirtualDesktop.Current;
+            var hWnd = Window.DangerousGetHandle();
+            
+            var virtualDesktop = VirtualDesktop.FromHwnd(hWnd);
+            
+            if (virtualDesktop == null) 
+                virtualDesktop = VirtualDesktop.Current;
+            
             VirtualDesktop = virtualDesktop;
         }
 
@@ -196,12 +201,12 @@ namespace AmethystWindows.Models
                 default:
                     try
                     {
-                        FileVersionInfo myFileVersionInfo = FileVersionInfo.GetVersionInfo(fileName);
-                        name = myFileVersionInfo.FileDescription;
+                        var myFileVersionInfo = FileVersionInfo.GetVersionInfo(fileName);
+                        name = myFileVersionInfo.FileDescription ?? "EmptyFileVersionDescription";
                     }
                     catch
                     {
-                        name = null;
+                        name = string.Empty;
                     }
                     break;
             }
@@ -242,7 +247,7 @@ namespace AmethystWindows.Models
             return new Pair<VirtualDesktop, HMONITOR>(VirtualDesktop, MonitorHandle);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is DesktopWindow window &&
                    EqualityComparer<VirtualDesktop>.Default.Equals(VirtualDesktop, window.VirtualDesktop) &&
@@ -253,7 +258,8 @@ namespace AmethystWindows.Models
         public override int GetHashCode()
         {
             int hashCode = -810864280;
-            hashCode = hashCode * -1521134295 + EqualityComparer<VirtualDesktop>.Default.GetHashCode(VirtualDesktop);
+            var virtualDesktop = VirtualDesktop ?? throw new ArgumentNullException();
+            hashCode = hashCode * -1521134295 + EqualityComparer<VirtualDesktop>.Default.GetHashCode(virtualDesktop);
             hashCode = hashCode * -1521134295 + MonitorHandle.GetHashCode();
             hashCode = hashCode * -1521134295 + Window.GetHashCode();
             return hashCode;
