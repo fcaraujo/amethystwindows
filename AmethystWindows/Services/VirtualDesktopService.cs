@@ -29,7 +29,7 @@ namespace AmethystWindows.Services
 
         public void SynchronizeDesktops()
         {
-            var currentDesktops = _virtualDesktopFacade.GetList();
+            var currentDesktops = _virtualDesktopFacade.GetAll();
             var currentLength = currentDesktops.Length;
 
             var settingsOptions = _settingsService.GetSettingsOptions();

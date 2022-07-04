@@ -9,28 +9,33 @@ namespace AmethystWindows.Services
 {
     public interface IWin32MessageService
     {
-        IntPtr HandleMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled);
+        IntPtr HandleMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled);
     }
 
     public class Win32MessageService : IWin32MessageService
     {
-        private readonly IDesktopService _desktopWindowsManager;
+        private readonly IDesktopService _desktopService;
         private readonly ILogger _logger;
-        private readonly MainWindowViewModel _mainWindowViewModel;
+        private readonly MainWindowViewModel _mainWindowVM;
+        private readonly IVirtualDesktopWrapper _virtualDesktopWrapper;
 
-        public Win32MessageService(IDesktopService desktopWindowsManager, ILogger logger, MainWindowViewModel mainWindowViewModel)
+        public Win32MessageService(IDesktopService desktopService,
+                                   ILogger logger,
+                                   MainWindowViewModel mainWindowVM,
+                                   IVirtualDesktopWrapper virtualDesktopWrapper)
         {
-            _desktopWindowsManager = desktopWindowsManager ?? throw new ArgumentNullException(nameof(desktopWindowsManager));
+            _desktopService = desktopService ?? throw new ArgumentNullException(nameof(desktopService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _mainWindowViewModel = mainWindowViewModel ?? throw new ArgumentNullException(nameof(mainWindowViewModel));
+            _mainWindowVM = mainWindowVM ?? throw new ArgumentNullException(nameof(mainWindowVM));
+            _virtualDesktopWrapper = virtualDesktopWrapper ?? throw new ArgumentNullException(nameof(virtualDesktopWrapper));
         }
 
-        public IntPtr HandleMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        public IntPtr HandleMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             var isHotkey = msg == (uint)User32.WindowMessage.WM_HOTKEY;
             if (isHotkey)
             {
-                _logger.Debug($"Handling shortcut {{Msg}}", msg);
+                _logger.Debug("Handling shortcut {Msg}", msg);
 
                 var hotkeyId = 0L;
                 var command = CommandHotkey.None;
@@ -40,12 +45,11 @@ namespace AmethystWindows.Services
                     hotkeyId = wParam.ToInt64();
                     command = (CommandHotkey)hotkeyId;
 
-                    // TODO think in a way to get current desktop directly from the view model itself
                     var foregroundWindow = User32.GetForegroundWindow();
                     var currentMonitor = User32.MonitorFromWindow(foregroundWindow, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
-                    var currentVirtualDesktop = VirtualDesktop.Current;
+                    var currentVirtualDesktop = _virtualDesktopWrapper.GetCurrent();
                     var currentPair = new Pair<VirtualDesktop, HMONITOR>(currentVirtualDesktop, currentMonitor);
-                    var viewModelDesktopMonitor = _mainWindowViewModel.DesktopMonitors[currentPair];
+                    var viewModelDesktopMonitor = _mainWindowVM.DesktopMonitors[currentPair];
 
                     switch (command)
                     {
@@ -81,7 +85,7 @@ namespace AmethystWindows.Services
                         case CommandHotkey.MoveFocusedNextScreen:
                         case CommandHotkey.MoveNextSpace:
                         case CommandHotkey.MovePreviousSpace:
-                            _desktopWindowsManager.Dispatch(command);
+                            _desktopService.Dispatch(command);
                             break;
 
                         case CommandHotkey.None:
@@ -91,7 +95,7 @@ namespace AmethystWindows.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error(ex, $"Failed to run hotkey {{HotkeyId}} for {{Command}}.", hotkeyId, command);
+                    _logger.Error(ex, "Failed to run hotkey {HotkeyId} for {Command}.", hotkeyId, command);
                 }
             }
 

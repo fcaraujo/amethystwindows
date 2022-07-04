@@ -9,8 +9,9 @@ namespace AmethystWindows.Services
     /// </summary>
     public interface IVirtualDesktopWrapper
     {
-        VirtualDesktop[] GetList();
         void Add();
+        VirtualDesktop? GetCurrent();
+        VirtualDesktop[] GetAll();
         void RemoveLast();
     }
 
@@ -30,16 +31,22 @@ namespace AmethystWindows.Services
             VirtualDesktop.Create();
         }
 
-        public VirtualDesktop[] GetList()
+        public VirtualDesktop? GetCurrent()
         {
-            _logger.Debug("Performing {VirtualDesktopWrapperMethod} virtual desktop.", nameof(GetList));
+            _logger.Debug("Performing {VirtualDesktopWrapperMethod} virtual desktop.", nameof(GetCurrent));
+            return VirtualDesktop.Current;
+        }
+
+        public VirtualDesktop[] GetAll()
+        {
+            _logger.Debug("Performing {VirtualDesktopWrapperMethod} virtual desktop.", nameof(GetAll));
             return VirtualDesktop.GetDesktops();
         }
 
         public void RemoveLast()
         {
             _logger.Debug("Performing {VirtualDesktopWrapperMethod} virtual desktop.", nameof(RemoveLast));
-            var lastVirtualDesktop = GetList().ToList().Last();
+            var lastVirtualDesktop = GetAll().ToList().Last();
             lastVirtualDesktop?.Remove();
         }
     }

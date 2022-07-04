@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "Serilog",
+        "Vanara",
         "Xunit"
     ],
     "dotnet-test-explorer.testProjectPath": "**/*Tests.csproj"
