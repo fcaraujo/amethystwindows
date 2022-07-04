@@ -1,5 +1,7 @@
 {
     "cSpell.words": [
+        "appsettings",
+        "inheritdoc",
         "Serilog",
         "Vanara",
         "Xunit"

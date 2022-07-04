@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using System;
 using System.Linq;
 using WindowsDesktop;
 
@@ -13,6 +14,7 @@ namespace AmethystWindows.Services
         VirtualDesktop? GetCurrent();
         VirtualDesktop[] GetAll();
         void RemoveLast();
+        void SubscribeChangedEvent(EventHandler<VirtualDesktopChangedEventArgs> eventHandler);
     }
 
     public class VirtualDesktopWrapper : IVirtualDesktopWrapper
@@ -48,6 +50,11 @@ namespace AmethystWindows.Services
             _logger.Debug("Performing {VirtualDesktopWrapperMethod} virtual desktop.", nameof(RemoveLast));
             var lastVirtualDesktop = GetAll().ToList().Last();
             lastVirtualDesktop?.Remove();
+        }
+
+        public void SubscribeChangedEvent(EventHandler<VirtualDesktopChangedEventArgs> eventHandler)
+        {
+            VirtualDesktop.CurrentChanged += eventHandler;
         }
     }
 }

@@ -8,7 +8,6 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using WindowsDesktop;
 
 namespace AmethystWindows
 {
@@ -81,27 +80,26 @@ namespace AmethystWindows
         {
             base.OnStartup(e);
 
+            // Show WPF window
             var mainWindow = _serviceProvider.GetService<MainWindow>() ?? throw new ArgumentNullException(nameof(MainWindow));
             mainWindow.Show();
 
-            VirtualDesktop.CurrentChanged += OnVirtualDesktopIsChangedHandler;
-
+            // Handle hotkeys
             var hotkeyService = _serviceProvider.GetService<HotkeyService>() ?? throw new ArgumentNullException(nameof(HotkeyService));
             hotkeyService.SetWindowsHook();
             hotkeyService.RegisterHotkeys();
 
+            // Handle virtual desktop/windows
             var desktopService = _serviceProvider.GetService<IDesktopService>() ?? throw new ArgumentNullException(nameof(DesktopService));
             desktopService.CollectWindows();
 
             var virtualDesktopService = _serviceProvider.GetService<IVirtualDesktopService>() ?? throw new ArgumentNullException(nameof(VirtualDesktopService));
+            virtualDesktopService.SubscribeChangedEvent((_, args) =>
+            {
+                desktopService.CollectWindows();
+                desktopService.Draw();
+            });
             virtualDesktopService.SynchronizeDesktops();
-        }
-
-        private void OnVirtualDesktopIsChangedHandler(object? sender, VirtualDesktopChangedEventArgs e)
-        {
-            var desktopService = _serviceProvider.GetService<IDesktopService>() ?? throw new ArgumentNullException(nameof(DesktopService));
-            desktopService.CollectWindows();
-            desktopService.Draw();
         }
     }
 }
