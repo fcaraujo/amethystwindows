@@ -4,7 +4,7 @@
     {
         Horizontal = 0,
         Vertical = 1,
-        HorizGrid = 2,
+        HorizontalGrid = 2,
         VertGrid = 3,
         Monocle = 4,
         Wide = 5,

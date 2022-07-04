@@ -46,7 +46,7 @@ namespace AmethystWindowsTests.Services
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[0], new Rectangle(0, 0, 1000, 1000));
             Assert.Throws<IndexOutOfRangeException>(() => gridGenerator.ToArray()[1]);
 
-            layout = Layout.HorizGrid;
+            layout = Layout.HorizontalGrid;
             gridGenerator = _sut.GridGenerator(1000, 1000, 1, 0, layout, 0);
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[0], new Rectangle(0, 0, 1000, 1000));
             Assert.Throws<IndexOutOfRangeException>(() => gridGenerator.ToArray()[1]);
@@ -93,7 +93,7 @@ namespace AmethystWindowsTests.Services
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[1], new Rectangle(500, 0, 500, 1000));
             Assert.Throws<IndexOutOfRangeException>(() => gridGenerator.ToArray()[2]);
 
-            layout = Layout.HorizGrid;
+            layout = Layout.HorizontalGrid;
             gridGenerator = _sut.GridGenerator(1000, 1000, 2, 0, layout, 0);
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[0], new Rectangle(0, 0, 1000, 500));
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[1], new Rectangle(0, 500, 1000, 500));
@@ -142,7 +142,7 @@ namespace AmethystWindowsTests.Services
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[2], new Rectangle(500, 500, 500, 500));
             Assert.Throws<IndexOutOfRangeException>(() => gridGenerator.ToArray()[3]);
 
-            layout = Layout.HorizGrid;
+            layout = Layout.HorizontalGrid;
             gridGenerator = _sut.GridGenerator(1000, 1000, 3, 0, layout, 0);
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[0], new Rectangle(0, 0, 1000, 500));
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[1], new Rectangle(0, 500, 500, 500));
@@ -198,7 +198,7 @@ namespace AmethystWindowsTests.Services
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[3], new Rectangle(500, 500, 500, 500));
             Assert.Throws<IndexOutOfRangeException>(() => gridGenerator.ToArray()[4]);
 
-            layout = Layout.HorizGrid;
+            layout = Layout.HorizontalGrid;
             gridGenerator = _sut.GridGenerator(1000, 1000, 4, 0, layout, 0);
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[0], new Rectangle(0, 0, 500, 500));
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[1], new Rectangle(500, 0, 500, 500));
@@ -261,7 +261,7 @@ namespace AmethystWindowsTests.Services
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[4], new Rectangle(500, 666, 500, 333));
             Assert.Throws<IndexOutOfRangeException>(() => gridGenerator.ToArray()[5]);
 
-            layout = Layout.HorizGrid;
+            layout = Layout.HorizontalGrid;
             gridGenerator = _sut.GridGenerator(1000, 1000, 5, 0, layout, 0);
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[0], new Rectangle(0, 0, 500, 500));
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[1], new Rectangle(500, 0, 500, 500));
@@ -302,7 +302,7 @@ namespace AmethystWindowsTests.Services
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[5], new Rectangle(666, 500, 333, 500));
             Assert.Throws<IndexOutOfRangeException>(() => gridGenerator.ToArray()[6]);
 
-            layout = Layout.HorizGrid;
+            layout = Layout.HorizontalGrid;
             gridGenerator = _sut.GridGenerator(1000, 1000, 6, 0, layout, 0);
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[0], new Rectangle(0, 0, 500, 333));
             Assert.Equal<Rectangle>(gridGenerator.ToArray()[1], new Rectangle(500, 0, 500, 333));

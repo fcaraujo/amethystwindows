@@ -211,7 +211,7 @@ namespace AmethystWindows.Services
                         yield return new Rectangle(j, i * vertSize, mWidth, vertSize - lastPadding);
                     }
                     break;
-                case Layout.HorizGrid:
+                case Layout.HorizontalGrid:
                     horizStep = Math.Max((int)Math.Sqrt(windowsCount), 1);
                     vertStep = Math.Max(windowsCount / horizStep, 1);
                     tiles = horizStep * vertStep;
