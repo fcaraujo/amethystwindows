@@ -6,5 +6,5 @@
         "Vanara",
         "Xunit"
     ],
-    "dotnet-test-explorer.testProjectPath": "**/*Tests.csproj"
+    "dotnet-test-explorer.testProjectPath": "tests/**/*Tests.csproj"
 }

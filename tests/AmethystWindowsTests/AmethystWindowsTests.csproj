@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AmethystWindows\AmethystWindows.csproj" />
+    <ProjectReference Include="..\..\src\AmethystWindows\AmethystWindows.csproj" />
   </ItemGroup>
 
 </Project>

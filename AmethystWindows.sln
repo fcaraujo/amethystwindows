@@ -3,11 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32210.238
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AmethystWindows", "AmethystWindows.csproj", "{EAA1FB9B-8A29-4270-B6E7-E89A458A11F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AmethystWindows", "src\AmethystWindows\AmethystWindows.csproj", "{EAA1FB9B-8A29-4270-B6E7-E89A458A11F9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AmethystWindowsTests", "..\AmethystWindowsTests\AmethystWindowsTests.csproj", "{EF8905FE-FEA1-43FE-AFD5-3C0FF8DE4273}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AmethystWindowsTests", "tests\AmethystWindowsTests\AmethystWindowsTests.csproj", "{EF8905FE-FEA1-43FE-AFD5-3C0FF8DE4273}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AmethystWindowsSetup", "..\AmethystWindowsSetup\AmethystWindowsSetup.vdproj", "{9A781B65-B9FC-40B4-913B-11C75B4DA42D}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AmethystWindowsSetup", "src\AmethystWindowsSetup\AmethystWindowsSetup.vdproj", "{9A781B65-B9FC-40B4-913B-11C75B4DA42D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{09C609A1-7DA0-45B5-A98E-CB03AEC2731A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FDB1873A-BC78-45FE-926F-D1581FDBC04A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,6 +56,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EAA1FB9B-8A29-4270-B6E7-E89A458A11F9} = {09C609A1-7DA0-45B5-A98E-CB03AEC2731A}
+		{EF8905FE-FEA1-43FE-AFD5-3C0FF8DE4273} = {FDB1873A-BC78-45FE-926F-D1581FDBC04A}
+		{9A781B65-B9FC-40B4-913B-11C75B4DA42D} = {09C609A1-7DA0-45B5-A98E-CB03AEC2731A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {09831895-015A-45B7-AA29-9039A41E8D20}
