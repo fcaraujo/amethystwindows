@@ -75,9 +75,6 @@ namespace AmethystWindows.Models
             _hotkeys = new ObservableHotkeys(hotkeyOptions);
             _filters = _settingsService.GetFiltersOptions();
 
-            // ? do we still need it?
-            _hotkeys.CollectionChanged += _hotkeys_CollectionChanged;
-
 
 
             // TODO move this settings into the service
@@ -135,12 +132,6 @@ namespace AmethystWindows.Models
             OnPropertyChanged("DesktopMonitors");
         }
 
-        private void _hotkeys_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            // TODO check this as prob not required anymore...
-            OnPropertyChanged("Hotkeys");
-        }
-
         public ICommand LoadedCommand { get; }
         public ICommand ClosingCommand { get; }
         public ICommand NotifyIconOpenCommand { get; }
@@ -182,15 +173,15 @@ namespace AmethystWindows.Models
             set => SetProperty(ref _excludedWindows, value);
         }
 
-        public ViewModelDesktopWindow SelectedWindow
+        public ViewModelDesktopWindow? SelectedWindow
         {
-            get => _selectedWindow ?? throw new ArgumentNullException(nameof(_selectedWindow));
+            get => _selectedWindow;
             set => SetProperty(ref _selectedWindow, value);
         }
 
-        public ViewModelDesktopWindow SelectedExcludedWindow
+        public ViewModelDesktopWindow? SelectedExcludedWindow
         {
-            get => _selectedExcludedWindow ?? throw new ArgumentNullException(nameof(_selectedExcludedWindow));
+            get => _selectedExcludedWindow;
             set => SetProperty(ref _selectedExcludedWindow, value);
         }
 
@@ -362,6 +353,10 @@ namespace AmethystWindows.Models
         {
             //AddFilter(SelectedWindow.AppName, "*");
 
+            if (SelectedWindow is null)
+            {
+                throw new ArgumentNullException();
+            }
             ConfigurableFilters = ConfigurableFilters.Concat(new[] { new Pair<string, string>(SelectedWindow.AppName, "*") }).ToList();
         }
 
@@ -369,6 +364,10 @@ namespace AmethystWindows.Models
         {
             //AddFilter(SelectedWindow.AppName, SelectedWindow.ClassName);
 
+            if (SelectedWindow is null)
+            {
+                throw new ArgumentNullException();
+            }
             ConfigurableFilters = ConfigurableFilters.Concat(new[] { new Pair<string, string>(SelectedWindow.AppName, SelectedWindow.ClassName) }).ToList();
         }
 
@@ -401,11 +400,21 @@ namespace AmethystWindows.Models
 
         public void AddApp()
         {
+            if (SelectedExcludedWindow is null)
+            {
+                throw new ArgumentNullException();
+            }
+
             ConfigurableAdditions = ConfigurableAdditions.Concat(new[] { new Pair<string, string>(SelectedExcludedWindow.AppName, "*") }).ToList();
         }
 
         public void AddClassWithinApp()
         {
+            if (SelectedExcludedWindow is null)
+            {
+                throw new ArgumentNullException();
+            }
+
             ConfigurableAdditions = ConfigurableAdditions.Concat(new[] { new Pair<string, string>(SelectedExcludedWindow.AppName, SelectedExcludedWindow.ClassName) }).ToList();
         }
 

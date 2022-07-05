@@ -86,7 +86,6 @@ namespace AmethystWindows.Services
             "DesktopMonitors",
             "Additions",
             "Filters",
-            "Hotkeys",
         };
 
 
@@ -549,18 +548,6 @@ namespace AmethystWindows.Services
         {
             _logger.Debug($"ModelViewChanged: {e.PropertyName}");
 
-            // TODO check if saving hotkeys on the event is enough
-            //if (e.PropertyName == "Hotkeys")
-            //{
-            //    // TODO add dependency of HooksService in this class retrieve it
-            //    var _hooksService = IocProvider.GetService<HooksService>();
-            //    _hooksService.ClearHotkeys();
-            //    _hooksService.SetKeyboardHook();
-
-            //    _settingsService.SetHotkeyOptions(mainWindowViewModel);
-            //    _settingsService.Save();
-            //}
-
             if (ModelViewPropertiesSaveSettings.Contains(e.PropertyName))
             {
                 var i = MySettings.Instance ?? throw new ArgumentNullException(nameof(MySettings.Instance));
@@ -587,8 +574,15 @@ namespace AmethystWindows.Services
 
             if (ModelViewPropertiesDraw.Contains(e.PropertyName))
             {
-                if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) && _mainWindowViewModel.LastChangedDesktopMonitor.Key != null) debounceDispatcher.Debounce(() => Draw(_mainWindowViewModel.LastChangedDesktopMonitor));
-                else debounceDispatcher.Debounce(() => Draw());
+                if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) &&
+                    _mainWindowViewModel.LastChangedDesktopMonitor.Key != null)
+                {
+                    debounceDispatcher.Debounce(() => Draw(_mainWindowViewModel.LastChangedDesktopMonitor));
+                }
+                else
+                {
+                    debounceDispatcher.Debounce(() => Draw());
+                }
             }
 
             if (e.PropertyName == nameof(SettingsOptions.VirtualDesktops))
@@ -792,6 +786,7 @@ namespace AmethystWindows.Services
                     desktopWindow.GetInfo();
             }
 
+            // TODO check exception - An exception of type 'System.InvalidOperationException' occurred in WindowsBase.dll but was not handled in user code: 'The calling thread cannot access this object because a different thread owns it.'
             if (!System.Windows.Application.Current.MainWindow.Equals(null))
             {
                 _mainWindowViewModel.UpdateWindows();
