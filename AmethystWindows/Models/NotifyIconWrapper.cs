@@ -35,7 +35,7 @@ namespace AmethystWindows.Models
             if (DesignerProperties.GetIsInDesignMode(this))
                 return;
 
-            _mainWindowViewModel = IocProvider.GetService<MainWindowViewModel>() ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
+            _mainWindowViewModel = DIContainer.GetService<MainWindowViewModel>() ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
 
             _notifyIcon = new NotifyIcon
             {

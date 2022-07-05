@@ -5,7 +5,7 @@ using AmethystWindows.Services;
 using System.Windows;
 using System.Windows.Input;
 
-namespace AmethystWindows.Hotkeys
+namespace AmethystWindows
 {
     public partial class HotkeyEditorControl
     {
@@ -89,12 +89,12 @@ namespace AmethystWindows.Hotkeys
             }
 
             // Persist setting
-            var settingsService = IocProvider.GetService<ISettingsService>();
+            var settingsService = DIContainer.GetService<ISettingsService>();
             settingsService?.SetHotkey(ViewModelHotkey);
             settingsService?.Save();
 
             // Apply hotkey
-            var hotkeyService = IocProvider.GetService<HotkeyService>();
+            var hotkeyService = DIContainer.GetService<HotkeyService>();
             hotkeyService?.ClearHotkeys();
             hotkeyService?.RegisterHotkeys();
         }

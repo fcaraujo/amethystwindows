@@ -1,13 +1,14 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using AmethystWindows.Models;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace AmethystWindows.DependencyInjection
 {
-    public class IocProvider
+    public class DIContainer
     {
         private static IServiceProvider? _provider;
 
-        public static IServiceProvider Build(IServiceCollection services)
+        public static IServiceProvider BuildProvider(IServiceCollection services)
         {
             if (services is null)
             {
@@ -28,6 +29,14 @@ namespace AmethystWindows.DependencyInjection
             var service = _provider.GetService(typeof(T)) ?? throw new ArgumentNullException("Service");
 
             return (T)service;
+        }
+
+        /// <summary>
+        /// View model locator to pass statically the view model to WPF
+        /// </summary>
+        public MainWindowViewModel MainWindowViewModel
+        {
+            get => GetService<MainWindowViewModel>();
         }
     }
 }

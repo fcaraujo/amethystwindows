@@ -25,7 +25,7 @@ namespace AmethystWindows.Models.Converters
 
         public DesktopMonitorsConverter()
         {
-            _logger = IocProvider.GetService<ILogger>() ?? throw new ArgumentNullException(nameof(_logger));
+            _logger = DIContainer.GetService<ILogger>() ?? throw new ArgumentNullException(nameof(_logger));
         }
 
         public override bool CanConvert(Type objectType)

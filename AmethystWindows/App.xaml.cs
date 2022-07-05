@@ -30,7 +30,7 @@ namespace AmethystWindows
 
             // Dependency Injection
             var services = ConfigureServices(configuration);
-            _serviceProvider = IocProvider.Build(services);
+            _serviceProvider = DIContainer.BuildProvider(services);
         }
 
         private static IServiceCollection ConfigureServices(IConfiguration configuration)

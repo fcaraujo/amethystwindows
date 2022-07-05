@@ -1,11 +1,11 @@
 ﻿<Application x:Class="AmethystWindows.App"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ui="http://schemas.modernwpf.com/2019"
-             xmlns:local="clr-namespace:AmethystWindows.DependencyInjection">
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.modernwpf.com/2019"
+    xmlns:di="clr-namespace:AmethystWindows.DependencyInjection">
     <Application.Resources>
         <ResourceDictionary>
-            <local:ViewModelProvider x:Key="ViewModelProvider"/>
+            <di:DIContainer x:Key="DIContainer"/>
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemeResources />
                 <ui:XamlControlsResources />
