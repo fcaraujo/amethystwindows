@@ -53,18 +53,12 @@ namespace AmethystWindows.Services
 
                     switch (command)
                     {
-                        // Layout operations - TODO prob move into its own service
+                        // Layout operations
                         case CommandHotkey.RotateLayoutClockwise:
-                            viewModelDesktopMonitor?.RotateLayoutClockwise();
-                            break;
                         case CommandHotkey.RotateLayoutAntiClockwise:
-                            viewModelDesktopMonitor?.RotateLayoutAntiClockwise();
-                            break;
                         case CommandHotkey.ExpandMainPane:
-                            viewModelDesktopMonitor?.Expand();
-                            break;
                         case CommandHotkey.Shrink:
-                            viewModelDesktopMonitor?.Shrink();
+                            viewModelDesktopMonitor?.Dispatch(command);
                             break;
 
                         // Windows Management operations

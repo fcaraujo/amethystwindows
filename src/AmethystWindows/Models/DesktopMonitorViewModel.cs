@@ -67,43 +67,27 @@ namespace AmethystWindows.Models
             }
         }
 
-
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public void Shrink()
+        public void Dispatch(CommandHotkey command)
         {
-            --Factor;
-        }
-
-        public void Expand()
-        {
-            ++Factor;
-        }
-
-        public void RotateLayoutClockwise()
-        {
-            IEnumerable<Layout> values = Enum.GetValues(typeof(Layout)).Cast<Layout>();
-            if (Layout == values.Max())
+            // TODO prob consider moving into its own service decoupled from this view model
+            switch (command)
             {
-                Layout = Layout.Horizontal;
-            }
-            else
-            {
-                ++Layout;
-            }
-        }
-
-        public void RotateLayoutAntiClockwise()
-        {
-            IEnumerable<Layout> values = Enum.GetValues(typeof(Layout)).Cast<Layout>();
-            if (Layout == 0)
-            {
-                Layout = Layout.Tall;
-            }
-            else
-            {
-                --Layout;
+                case CommandHotkey.RotateLayoutClockwise:
+                    this.RotateLayoutClockwise();
+                    break;
+                case CommandHotkey.RotateLayoutAntiClockwise:
+                    this.RotateLayoutAntiClockwise();
+                    break;
+                case CommandHotkey.ExpandMainPane:
+                    this.Expand();
+                    break;
+                case CommandHotkey.Shrink:
+                    this.Shrink();
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -124,6 +108,40 @@ namespace AmethystWindows.Models
         public Pair<VirtualDesktop, HMONITOR> GetPair()
         {
             return new Pair<VirtualDesktop, HMONITOR>(VirtualDesktop, Monitor);
+        }
+        private void Shrink()
+        {
+            --Factor;
+        }
+
+        private void Expand()
+        {
+            ++Factor;
+        }
+
+        private void RotateLayoutClockwise()
+        {
+            var layouts = Enum.GetValues(typeof(Layout)).Cast<Layout>();
+            if (Layout == layouts.Max())
+            {
+                Layout = Layout.Horizontal;
+            }
+            else
+            {
+                ++Layout;
+            }
+        }
+
+        private void RotateLayoutAntiClockwise()
+        {
+            if (Layout == 0)
+            {
+                Layout = Layout.Tall;
+            }
+            else
+            {
+                --Layout;
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Serilog;
 using System;
+using System.Linq;
 using WindowsDesktop;
 
 namespace AmethystWindows.Services
@@ -9,6 +10,11 @@ namespace AmethystWindows.Services
     /// </summary>
     public interface IVirtualDesktopService
     {
+        /// <summary>
+        /// Gets the virtual desktop in that particular order
+        /// </summary>
+        VirtualDesktop? GetFromNumber(int number);
+
         /// <summary>
         /// Binds event handler every time the virtual desktops are switched
         /// </summary>
@@ -33,6 +39,15 @@ namespace AmethystWindows.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
             _virtualDesktopWrapper = virtualDesktopWrapper ?? throw new ArgumentNullException(nameof(virtualDesktopWrapper));
+        }
+
+        public VirtualDesktop? GetFromNumber(int index)
+        {
+            var desktops = _virtualDesktopWrapper.GetAll();
+
+            var result = desktops?.ElementAtOrDefault(index);
+
+            return result;
         }
 
         /// <inheritdoc />

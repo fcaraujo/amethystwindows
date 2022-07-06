@@ -359,6 +359,7 @@ namespace AmethystWindows.Services
         {
             var foregroundWindow = User32.GetForegroundWindow();
             var currentMonitor = User32.MonitorFromWindow(foregroundWindow, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
+            // TODO remove VirtualDesktop dependency when possible
             var currentVirtualDesktop = VirtualDesktop.Current;
             var currentPair = new Pair<VirtualDesktop, HMONITOR>(currentVirtualDesktop, currentMonitor);
 
@@ -393,16 +394,15 @@ namespace AmethystWindows.Services
                 case CommandHotkey.ChangeWindowFocusClockwise:
                     ChangeWindowFocusClockwise(currentPair, selectedWindow);
                     break;
-
-                // TODO check all hotkeys below
                 case CommandHotkey.MoveFocusedToSpace1:
                 case CommandHotkey.MoveFocusedToSpace2:
                 case CommandHotkey.MoveFocusedToSpace3:
                 case CommandHotkey.MoveFocusedToSpace4:
                 case CommandHotkey.MoveFocusedToSpace5:
-                    MoveWindowSpecificVirtualDesktop(findWindow, findWindow.VirtualDesktop?.Id);
+                    MoveWindowSpecificVirtualDesktop(findWindow, command);
                     break;
 
+                // TODO check all hotkeys below
                 case CommandHotkey.MoveNextSpace:
                     MoveWindowNextVirtualDesktop(findWindow);
                     break;
@@ -925,7 +925,9 @@ namespace AmethystWindows.Services
             return desktopMonitorPair =>
             {
                 var key = desktopMonitorPair.Key ?? throw new ArgumentNullException();
-                var result = key.ToString() == VirtualDesktop.Current.ToString();
+                var result = key.ToString() ==
+                // TODO remove VirtualDesktop dependency when possible
+                VirtualDesktop.Current.ToString();
                 return result;
             };
         }
@@ -936,10 +938,15 @@ namespace AmethystWindows.Services
             if (nextVirtualDesktop != null)
             {
                 RemoveWindow(window);
+                // TODO remove VirtualDesktop dependency when possible
                 VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), nextVirtualDesktop);
                 window.VirtualDesktop = nextVirtualDesktop;
                 AddWindow(window);
                 nextVirtualDesktop.Switch();
+            }
+            else
+            {
+                // TODO Reached the last virtual desktop, lets make it circular?
             }
         }
 
@@ -949,29 +956,66 @@ namespace AmethystWindows.Services
             if (nextVirtualDesktop != null)
             {
                 RemoveWindow(window);
+                // TODO remove VirtualDesktop dependency when possible
                 VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), nextVirtualDesktop);
                 window.VirtualDesktop = nextVirtualDesktop;
                 AddWindow(window);
                 nextVirtualDesktop.Switch();
+            }
+            else
+            {
+                // TODO Reached the first virtual desktop, lets make it circular?
             }
         }
 
-        private void MoveWindowSpecificVirtualDesktop(DesktopWindow window, Guid? desktopGuid)
+        private void MoveWindowSpecificVirtualDesktop(DesktopWindow window, CommandHotkey command)
         {
-            if (window is null || desktopGuid is null)
+            _logger.Information("Perform {Command} on {Window}", command, window);
+
+            if (window is null)
             {
+                _logger.Warning("Window is null, therefore we should skip.");
                 return;
             }
 
-            var nextVirtualDesktop = VirtualDesktop.FromId(desktopGuid.GetValueOrDefault());
-            if (nextVirtualDesktop != null)
+            // TODO come up with a more sophisticated solution?
+            var index = 0;
+            switch (command)
             {
-                RemoveWindow(window);
-                VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), nextVirtualDesktop);
-                window.VirtualDesktop = nextVirtualDesktop;
-                AddWindow(window);
-                nextVirtualDesktop.Switch();
+                case CommandHotkey.MoveFocusedToSpace1:
+                    index = 0;
+                    break;
+                case CommandHotkey.MoveFocusedToSpace2:
+                    index = 1;
+                    break;
+                case CommandHotkey.MoveFocusedToSpace3:
+                    index = 2;
+                    break;
+                case CommandHotkey.MoveFocusedToSpace4:
+                    index = 3;
+                    break;
+                case CommandHotkey.MoveFocusedToSpace5:
+                    index = 4;
+                    break;
+                default:
+                    throw new NotSupportedException("Invalid command.");
             }
+
+            var virtualDesktop = _virtualDesktopService.GetFromNumber(index);
+            if (virtualDesktop is null)
+            {
+                _logger.Warning("Virtual desktop was not found, therefore we should skip.");
+                return;
+            }
+
+            // TODO check if the window already belongs to the target virtualDesktop?
+
+            RemoveWindow(window);
+            // TODO remove VirtualDesktop dependency when possible
+            VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), virtualDesktop);
+            window.VirtualDesktop = virtualDesktop;
+            AddWindow(window);
+            virtualDesktop.Switch();
         }
     }
 }
