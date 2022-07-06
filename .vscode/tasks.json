@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/AmethystWindows/AmethystWindows.csproj",
+                "${workspaceFolder}",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/AmethystWindows/AmethystWindows.csproj",
+                "${workspaceFolder}/src/AmethystWindows/AmethystWindows.csproj",
                 "-p:GenerateFullPaths=true",
                 "-o:C:\\dev\\bin\\amethyst\\",
                 "-c:release",
@@ -35,7 +35,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/AmethystWindows/AmethystWindows.csproj"
+                "${workspaceFolder}/src/AmethystWindows/AmethystWindows.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
