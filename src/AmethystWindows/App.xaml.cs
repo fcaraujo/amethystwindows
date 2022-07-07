@@ -19,25 +19,21 @@ namespace AmethystWindows
         {
             InitializeComponent();
 
-            // TODO create appsettings if doesnt exist
-            // TODO resolve path out of here
-            const string BasePath = "C:\\Users\\Fernando.Silva\\AppData\\Local\\AmethystWindows";
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(BasePath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.dev.json", optional: true, reloadOnChange: true);
-            var configuration = builder.Build();
-
-            // Dependency Injection
+            var configuration = ConfigurationHelper.GetRoot();
             var services = ConfigureServices(configuration);
             _serviceProvider = DIContainer.BuildProvider(services);
         }
 
-        private static IServiceCollection ConfigureServices(IConfiguration configuration)
+        private static IServiceCollection ConfigureServices(IConfiguration? configuration)
         {
+            if (configuration is null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var services = new ServiceCollection();
 
-            var t = configuration.GetSection("FiltersOptions").Get<List<Dictionary<string, string>>>();
+            // var t = configuration.GetSection("FiltersOptions").Get<List<Dictionary<string, string>>>();
 
             // Configuration
             services.Configure<DevOptions>(
