@@ -41,7 +41,6 @@ namespace AmethystWindows.Services
         private readonly ILogger _logger;
         private readonly IVirtualDesktopService _virtualDesktopService;
         private readonly ISettingsService _settingsService;
-
         private readonly MainWindowViewModel _mainWindowViewModel;
 
         private Dictionary<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> Windows { get; }
@@ -88,7 +87,6 @@ namespace AmethystWindows.Services
             "Filters",
         };
 
-
         // TODO turn this private and restrict its access?
         public ObservableCollection<DesktopWindow> ExcludedWindows { get; }
 
@@ -96,12 +94,15 @@ namespace AmethystWindows.Services
             "Settings",
         };
 
-        public DesktopService(ILogger logger, IVirtualDesktopService virtualDesktopService, ISettingsService settingsService, MainWindowViewModel amainWindowViewModel)
+        public DesktopService(ILogger logger,
+                              IVirtualDesktopService virtualDesktopService,
+                              ISettingsService settingsService,
+                              MainWindowViewModel mainWindowViewModel)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _virtualDesktopService = virtualDesktopService ?? throw new ArgumentNullException(nameof(virtualDesktopService));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
-            _mainWindowViewModel = amainWindowViewModel ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
+            _mainWindowViewModel = mainWindowViewModel ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
 
             Windows = new Dictionary<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>();
             ExcludedWindows = new ObservableCollection<DesktopWindow>();
@@ -359,8 +360,7 @@ namespace AmethystWindows.Services
         {
             var foregroundWindow = User32.GetForegroundWindow();
             var currentMonitor = User32.MonitorFromWindow(foregroundWindow, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
-            // TODO remove VirtualDesktop dependency when possible
-            var currentVirtualDesktop = VirtualDesktop.Current;
+            var currentVirtualDesktop = _virtualDesktopService.GetCurrent();
             var currentPair = new Pair<VirtualDesktop, HMONITOR>(currentVirtualDesktop, currentMonitor);
 
             var selectedWindow = GetWindowByHandlers(foregroundWindow, currentMonitor, currentVirtualDesktop);
@@ -382,18 +382,23 @@ namespace AmethystWindows.Services
 
             switch (command)
             {
+                // default => alt+shift+enter
                 case CommandHotkey.SetMainPane:
                     SetMainPane(currentPair, selectedWindow);
                     break;
+                // default => alt+shift+z
                 case CommandHotkey.Redraw:
                     Redraw();
                     break;
+                // default => alt+shift+j
                 case CommandHotkey.ChangeWindowFocusAntiClockwise:
                     ChangeWindowFocusAntiClockwise(currentPair, selectedWindow);
                     break;
+                // default => alt+shift+k
                 case CommandHotkey.ChangeWindowFocusClockwise:
                     ChangeWindowFocusClockwise(currentPair, selectedWindow);
                     break;
+                // default => alt+shift+win+{1,2,3,4,5}
                 case CommandHotkey.MoveFocusedToSpace1:
                 case CommandHotkey.MoveFocusedToSpace2:
                 case CommandHotkey.MoveFocusedToSpace3:
@@ -401,34 +406,41 @@ namespace AmethystWindows.Services
                 case CommandHotkey.MoveFocusedToSpace5:
                     MoveWindowSpecificVirtualDesktop(findWindow, command);
                     break;
-
-                // TODO check all hotkeys below
+                // default => alt+shift+win+"arrow-right"
                 case CommandHotkey.MoveNextSpace:
                     MoveWindowNextVirtualDesktop(findWindow);
                     break;
+                // default => alt+shift+win+"arrow-left"
                 case CommandHotkey.MovePreviousSpace:
                     MoveWindowPreviousVirtualDesktop(findWindow);
                     break;
+                // default => alt+shift+h
                 case CommandHotkey.SwapFocusedAnticlockwise:
                     RotateMonitorCounterClockwise(currentPair);
                     break;
+                // default => alt+shift+l
                 case CommandHotkey.SwapFocusedClockwise:
                     RotateMonitorClockwise(currentPair);
                     break;
-
+                // TODO apparently it does nothing - check with more than one monitor?!
+                // default => alt+shift+p
                 case CommandHotkey.MoveFocusPreviousScreen:
                     MoveWindowCounterClockwise(currentPair, selectedWindow);
                     break;
+                // TODO apparently it does nothing - check with more than one monitor?!
+                // default => alt+shift+n
                 case CommandHotkey.MoveFocusNextScreen:
                     MoveWindowClockwise(currentPair, selectedWindow);
                     break;
+                // default => alt+shift+win+k
                 case CommandHotkey.MoveFocusedPreviousScreen:
                     MoveWindowPreviousScreen(findWindow);
                     break;
+                // default => alt+shift+win+j
                 case CommandHotkey.MoveFocusedNextScreen:
                     MoveWindowNextScreen(findWindow);
                     break;
-
+                // empty action
                 case CommandHotkey.None:
                 default:
                     break;
@@ -793,12 +805,12 @@ namespace AmethystWindows.Services
             }
         }
 
-        private DesktopWindow? GetWindowByHandlers(HWND hWND, HMONITOR hMONITOR, VirtualDesktop desktop)
+        private DesktopWindow? GetWindowByHandlers(HWND hWnd, HMONITOR hMONITOR, VirtualDesktop? desktop)
         {
             DesktopWindow? result = null;
             try
             {
-                result = Windows[new Pair<VirtualDesktop, HMONITOR>(desktop, hMONITOR)].First(window => window.Window == hWND);
+                result = Windows[new Pair<VirtualDesktop, HMONITOR>(desktop, hMONITOR)].First(window => window.Window == hWnd);
             }
             catch (Exception)
             {
@@ -920,52 +932,61 @@ namespace AmethystWindows.Services
             }
         }
 
-        private static Func<Pair<VirtualDesktop, HMONITOR>, bool> IsCurrentVirtualDesktop()
+        private Func<Pair<VirtualDesktop, HMONITOR>, bool> IsCurrentVirtualDesktop()
         {
             return desktopMonitorPair =>
             {
                 var key = desktopMonitorPair.Key ?? throw new ArgumentNullException();
-                var result = key.ToString() ==
-                // TODO remove VirtualDesktop dependency when possible
-                VirtualDesktop.Current.ToString();
+                var current = _virtualDesktopService.GetCurrent();
+                var result = key.ToString() == current?.ToString();
                 return result;
             };
         }
 
         private void MoveWindowNextVirtualDesktop(DesktopWindow window)
         {
-            var nextVirtualDesktop = window.VirtualDesktop?.GetRight();
-            if (nextVirtualDesktop != null)
+            var targetDesktop = window.VirtualDesktop?.GetRight();
+
+            // TODO consider having a toggling circular list here (to move to the first virtual desktop) 
+            // var targetDesktop = (nextVirtualDesktop is not null)
+            //     ? nextVirtualDesktop
+            //     : _virtualDesktopService.GetFromIndex(0);
+
+            if (targetDesktop is null)
             {
-                RemoveWindow(window);
-                // TODO remove VirtualDesktop dependency when possible
-                VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), nextVirtualDesktop);
-                window.VirtualDesktop = nextVirtualDesktop;
-                AddWindow(window);
-                nextVirtualDesktop.Switch();
+                _logger.Warning("Cannot move {Window} to the next virtual desktop. Target desktop is null, potentially window reached the last virtual desktop.");
+                return;
             }
-            else
-            {
-                // TODO Reached the last virtual desktop, lets make it circular?
-            }
+
+            RemoveWindow(window);
+            var hWnd = window.Window.DangerousGetHandle();
+            _virtualDesktopService.MoveTo(hWnd, targetDesktop);
+            window.VirtualDesktop = targetDesktop;
+            AddWindow(window);
+            targetDesktop.Switch();
         }
 
         private void MoveWindowPreviousVirtualDesktop(DesktopWindow window)
         {
-            var nextVirtualDesktop = window.VirtualDesktop?.GetLeft();
-            if (nextVirtualDesktop != null)
+            var targetDesktop = window.VirtualDesktop?.GetLeft();
+
+            // TODO consider having a toggling circular list here (to move to the last virtual desktop) 
+            // var targetDesktop = (nextVirtualDesktop is not null)
+            //     ? nextVirtualDesktop
+            //     : _virtualDesktopService.GetLast();
+
+            if (targetDesktop is null)
             {
-                RemoveWindow(window);
-                // TODO remove VirtualDesktop dependency when possible
-                VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), nextVirtualDesktop);
-                window.VirtualDesktop = nextVirtualDesktop;
-                AddWindow(window);
-                nextVirtualDesktop.Switch();
+                _logger.Warning("Cannot move {Window} to the previous virtual desktop. Target desktop is null, potentially window reached the first virtual desktop.");
+                return;
             }
-            else
-            {
-                // TODO Reached the first virtual desktop, lets make it circular?
-            }
+
+            RemoveWindow(window);
+            var hWnd = window.Window.DangerousGetHandle();
+            _virtualDesktopService.MoveTo(hWnd, targetDesktop);
+            window.VirtualDesktop = targetDesktop;
+            AddWindow(window);
+            targetDesktop.Switch();
         }
 
         private void MoveWindowSpecificVirtualDesktop(DesktopWindow window, CommandHotkey command)
@@ -1001,21 +1022,26 @@ namespace AmethystWindows.Services
                     throw new NotSupportedException("Invalid command.");
             }
 
-            var virtualDesktop = _virtualDesktopService.GetFromNumber(index);
-            if (virtualDesktop is null)
+            var targetDesktop = _virtualDesktopService.GetFromIndex(index);
+            if (targetDesktop is null)
             {
                 _logger.Warning("Virtual desktop was not found, therefore we should skip.");
                 return;
             }
 
-            // TODO check if the window already belongs to the target virtualDesktop?
+            var isWindowAlreadyPresent = targetDesktop == window.VirtualDesktop;
+            if (isWindowAlreadyPresent)
+            {
+                _logger.Debug("Window is already present in {TargetDesktop}.", targetDesktop);
+                return;
+            }
 
             RemoveWindow(window);
-            // TODO remove VirtualDesktop dependency when possible
-            VirtualDesktop.MoveToDesktop(window.Window.DangerousGetHandle(), virtualDesktop);
-            window.VirtualDesktop = virtualDesktop;
+            var hWnd = window.Window.DangerousGetHandle();
+            _virtualDesktopService.MoveTo(hWnd, targetDesktop);
+            window.VirtualDesktop = targetDesktop;
             AddWindow(window);
-            virtualDesktop.Switch();
+            targetDesktop.Switch();
         }
     }
 }

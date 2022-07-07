@@ -11,9 +11,24 @@ namespace AmethystWindows.Services
     public interface IVirtualDesktopService
     {
         /// <summary>
+        /// Gets the current virtual desktop
+        /// </summary>
+        VirtualDesktop? GetCurrent();
+
+        /// <summary>
         /// Gets the virtual desktop in that particular order
         /// </summary>
-        VirtualDesktop? GetFromNumber(int number);
+        VirtualDesktop? GetFromIndex(int i);
+
+        /// <summary>
+        /// Gets the last virtual desktop (the most right)
+        /// </summary>
+        VirtualDesktop? GetLast();
+
+        /// <summary>
+        /// Move to a target desktop based on window's handler
+        /// </summary>
+        void MoveTo(IntPtr hWnd, VirtualDesktop targetDesktop);
 
         /// <summary>
         /// Binds event handler every time the virtual desktops are switched
@@ -41,13 +56,37 @@ namespace AmethystWindows.Services
             _virtualDesktopWrapper = virtualDesktopWrapper ?? throw new ArgumentNullException(nameof(virtualDesktopWrapper));
         }
 
-        public VirtualDesktop? GetFromNumber(int index)
+        /// <inheritdoc />
+        public VirtualDesktop? GetCurrent()
+        {
+            var result = _virtualDesktopWrapper.GetCurrent();
+            return result;
+        }
+
+        /// <inheritdoc />
+        public VirtualDesktop? GetFromIndex(int i)
         {
             var desktops = _virtualDesktopWrapper.GetAll();
 
-            var result = desktops?.ElementAtOrDefault(index);
+            var result = desktops?.ElementAtOrDefault(i);
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public VirtualDesktop? GetLast()
+        {
+            var desktops = _virtualDesktopWrapper.GetAll();
+
+            var result = desktops?.Last();
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public void MoveTo(IntPtr hWnd, VirtualDesktop targetDesktop)
+        {
+            _virtualDesktopWrapper.MoveToDesktop(hWnd, targetDesktop);
         }
 
         /// <inheritdoc />
