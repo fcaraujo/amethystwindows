@@ -62,6 +62,7 @@ namespace AmethystWindows
             logger.Information("Configure services and start up");
 
             services.AddTransient<ILogger>(x => logger);
+            services.AddSingleton<IAutoStartService, AutoStartService>();
             services.AddSingleton<MainWindow>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<IVirtualDesktopWrapper, VirtualDesktopWrapper>();
@@ -96,6 +97,9 @@ namespace AmethystWindows
                 desktopService.Draw();
             });
             virtualDesktopService.SynchronizeDesktops();
+
+            var autoStartService = _serviceProvider.GetService<IAutoStartService>() ?? throw new ArgumentNullException(nameof(AutoStartService));
+            autoStartService.SetStartup();
         }
     }
 }
