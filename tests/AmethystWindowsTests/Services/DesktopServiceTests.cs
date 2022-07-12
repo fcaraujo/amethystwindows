@@ -29,7 +29,7 @@ namespace AmethystWindowsTests.Services
                 .Setup(x => x.GetSettingsOptions())
                 .Returns(new SettingsOptions { });
 
-            mainWindowViewModel = new(settingsServiceMock.Object);
+            mainWindowViewModel = new(loggerMock.Object, settingsServiceMock.Object);
             _sut = new DesktopService(loggerMock.Object, virtualDesktopServiceMock.Object, settingsServiceMock.Object, mainWindowViewModel);
         }
 

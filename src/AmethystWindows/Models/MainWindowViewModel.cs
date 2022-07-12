@@ -4,6 +4,7 @@ using AmethystWindows.Services;
 using AmethystWindows.Settings;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -51,10 +52,11 @@ namespace AmethystWindows.Models
         private ObservableDesktopMonitors _desktopMonitors;
 
         private readonly ISettingsService _settingsService;
+        private readonly ILogger _logger;
 
-        public MainWindowViewModel(ISettingsService settingsService)
+        public MainWindowViewModel(ILogger logger, ISettingsService settingsService)
         {
-            // TODO handle default settings in the first startup?
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
 
             // General Settings
@@ -316,6 +318,8 @@ namespace AmethystWindows.Models
 
         public void UpdateWindows()
         {
+            _logger.Debug("Performing {MainWindowViewModelMethod}.", nameof(UpdateWindows));
+
             // TODO use DI to get DWM
             var desktopService = DIContainer.GetService<IDesktopService>();
 
