@@ -140,46 +140,6 @@ namespace AmethystWindows.Services
             }
         }
 
-        public void Draw()
-        {
-            if (_mainWindowViewModel.Disabled)
-            {
-                _logger.Warning("Skipping draw as it's disabled.");
-                return;
-            }
-
-            foreach (var desktopMonitor in Windows)
-            {
-                int mX, mY;
-                IEnumerable<Rectangle> gridGenerator;
-                DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
-
-                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-                {
-                    User32.ShowWindow(w.Item2.Window, ShowWindowCommand.SW_RESTORE);
-                }
-
-                HDWP hDWP1 = User32.BeginDeferWindowPos(Windows.Count);
-                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-                {
-                    Rectangle adjustedSize = new Rectangle(
-                        gridGenerator.ToArray()[w.Item1].X,
-                        gridGenerator.ToArray()[w.Item1].Y,
-                        gridGenerator.ToArray()[w.Item1].Width,
-                        gridGenerator.ToArray()[w.Item1].Height
-                    );
-
-                    DrawWindow(mX, mY, adjustedSize, w, hDWP1, Windows.Count);
-                }
-                User32.EndDeferWindowPos(hDWP1.DangerousGetHandle());
-
-                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
-                {
-                    w.Item2.GetWindowInfo();
-                }
-            }
-        }
-
         // Previously from *.GENERATOR
         public IEnumerable<Rectangle> GridGenerator(int mWidth, int mHeight, int windowsCount, int factor, Layout layout, int layoutPadding)
         {
@@ -386,15 +346,15 @@ namespace AmethystWindows.Services
                 case CommandHotkey.SetMainPane:
                     SetMainPane(currentPair, selectedWindow);
                     break;
-                // default => alt+shift+z
+                // default => alt+shift+Z
                 case CommandHotkey.Redraw:
                     Redraw();
                     break;
-                // default => alt+shift+j
+                // default => alt+shift+K
                 case CommandHotkey.ChangeWindowFocusAntiClockwise:
                     ChangeWindowFocusAntiClockwise(currentPair, selectedWindow);
                     break;
-                // default => alt+shift+k
+                // default => alt+shift+J
                 case CommandHotkey.ChangeWindowFocusClockwise:
                     ChangeWindowFocusClockwise(currentPair, selectedWindow);
                     break;
@@ -414,29 +374,29 @@ namespace AmethystWindows.Services
                 case CommandHotkey.MovePreviousSpace:
                     MoveWindowPreviousVirtualDesktop(findWindow);
                     break;
-                // default => alt+shift+h
+                // default => alt+shift+H
                 case CommandHotkey.SwapFocusedAnticlockwise:
                     RotateMonitorCounterClockwise(currentPair);
                     break;
-                // default => alt+shift+l
+                // default => alt+shift+L
                 case CommandHotkey.SwapFocusedClockwise:
                     RotateMonitorClockwise(currentPair);
                     break;
                 // TODO apparently it does nothing - check with more than one monitor?!
-                // default => alt+shift+p
+                // default => alt+shift+P
                 case CommandHotkey.MoveFocusPreviousScreen:
                     MoveWindowCounterClockwise(currentPair, selectedWindow);
                     break;
                 // TODO apparently it does nothing - check with more than one monitor?!
-                // default => alt+shift+n
+                // default => alt+shift+N
                 case CommandHotkey.MoveFocusNextScreen:
                     MoveWindowClockwise(currentPair, selectedWindow);
                     break;
-                // default => alt+shift+win+k
+                // default => alt+shift+win+K
                 case CommandHotkey.MoveFocusedPreviousScreen:
                     MoveWindowPreviousScreen(findWindow);
                     break;
-                // default => alt+shift+win+j
+                // default => alt+shift+win+J
                 case CommandHotkey.MoveFocusedNextScreen:
                     MoveWindowNextScreen(findWindow);
                     break;
@@ -558,47 +518,56 @@ namespace AmethystWindows.Services
 
         private void MainWindowViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            _logger.Debug($"ModelViewChanged: {e.PropertyName}");
+            var propertyName = e.PropertyName;
 
-            if (ModelViewPropertiesSaveSettings.Contains(e.PropertyName))
+            _logger.Debug("PropertyChanged {PropertyName}.", propertyName);
+
+            if (ModelViewPropertiesSaveSettings.Contains(propertyName))
             {
-                var i = MySettings.Instance ?? throw new ArgumentNullException(nameof(MySettings.Instance));
+                _logger.Debug("» Save settings.");
 
-                // TODO handle
+                // TODO handle it
+                var i = MySettings.Instance ?? throw new ArgumentNullException(nameof(MySettings.Instance));
                 MySettings.Instance.Filters = _mainWindowViewModel.ConfigurableFilters;
                 MySettings.Instance.Additions = _mainWindowViewModel.ConfigurableAdditions;
                 MySettings.Instance.DesktopMonitors = _mainWindowViewModel.DesktopMonitors.ToList();
-
                 MySettings.Save();
 
 
-                _settingsService.SetSettingsOptions(_mainWindowViewModel);
-
                 // TODO check it's been called every layout rotation?
+                _settingsService.SetSettingsOptions(_mainWindowViewModel);
                 _settingsService.Save();
             }
 
-            if (e.PropertyName == "ConfigurableFilters" || e.PropertyName == "ConfigurableAdditions")
+            if (propertyName == "ConfigurableFilters" || propertyName == "ConfigurableAdditions")
             {
+                _logger.Debug("» Configurable Filters/Additions.");
+
                 ClearWindows();
                 CollectWindows();
             }
 
-            if (ModelViewPropertiesDraw.Contains(e.PropertyName))
+            if (ModelViewPropertiesDraw.Contains(propertyName))
             {
-                if (ModelViewPropertiesDrawMonitor.Contains(e.PropertyName) &&
-                    _mainWindowViewModel.LastChangedDesktopMonitor.Key != null)
+                _logger.Debug("» Properties draw.");
+                var x = _mainWindowViewModel.LastChangedDesktopMonitor;
+
+                if (ModelViewPropertiesDrawMonitor.Contains(propertyName) && x.Key != null)
                 {
-                    debounceDispatcher.Debounce(() => Draw(_mainWindowViewModel.LastChangedDesktopMonitor));
+                    _logger.Debug("» Debounce with last changed desktop monitor.");
+                    debounceDispatcher.Debounce(() => Draw(x));
                 }
                 else
                 {
+                    _logger.Debug("» Debounce without monitor.");
                     debounceDispatcher.Debounce(() => Draw());
                 }
             }
 
-            if (e.PropertyName == nameof(SettingsOptions.VirtualDesktops))
+            if (propertyName == nameof(SettingsOptions.VirtualDesktops))
             {
+                _logger.Debug("» Virtual desktops.");
+
                 _virtualDesktopService.SynchronizeDesktops();
             }
         }
@@ -662,13 +631,67 @@ namespace AmethystWindows.Services
         }
 
         // Previously from *.DRAW
+        public void Draw()
+        {
+            _logger.Debug("Performing {DesktopServiceMethod}.", nameof(Draw));
+
+            if (_mainWindowViewModel.Disabled)
+            {
+                _logger.Warning("Skipping draw as it's disabled.");
+                return;
+            }
+
+            foreach (var desktopMonitor in Windows)
+            {
+                int mX, mY;
+                IEnumerable<Rectangle> gridGenerator;
+                DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
+
+                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+                {
+                    User32.ShowWindow(w.Item2.Window, ShowWindowCommand.SW_RESTORE);
+                }
+
+                HDWP hDWP1 = User32.BeginDeferWindowPos(Windows.Count);
+                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+                {
+                    Rectangle adjustedSize = new Rectangle(
+                        gridGenerator.ToArray()[w.Item1].X,
+                        gridGenerator.ToArray()[w.Item1].Y,
+                        gridGenerator.ToArray()[w.Item1].Width,
+                        gridGenerator.ToArray()[w.Item1].Height
+                    );
+
+                    DrawWindow(mX, mY, adjustedSize, w, hDWP1, Windows.Count);
+                }
+                User32.EndDeferWindowPos(hDWP1.DangerousGetHandle());
+
+                foreach (var w in desktopMonitor.Value.Select((value, i) => new Tuple<int, DesktopWindow>(i, value)))
+                {
+                    w.Item2.GetWindowInfo();
+                }
+            }
+        }
+
         private void Draw(Pair<VirtualDesktop, HMONITOR> key)
         {
-            if (_mainWindowViewModel.Disabled)
-                return;
+            _logger.Debug("Performing {DesktopServiceMethod} with {Monitor}.", nameof(Draw), key.Key);
 
-            ObservableCollection<DesktopWindow> windows = Windows[key];
-            KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>> desktopMonitor = new KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>(key, windows);
+            if (_mainWindowViewModel.Disabled)
+            {
+                _logger.Warning("Skipping draw as it's disabled.");
+                return;
+            }
+
+            if (!Windows.TryGetValue(key, out _))
+            {
+                _logger.Error("The key was not found in windows, therefore it's impossible to continue.");
+                return;
+            }
+
+            var windows = Windows[key];
+            var desktopMonitor = new KeyValuePair<Pair<VirtualDesktop, HMONITOR>, ObservableCollection<DesktopWindow>>(key, windows);
+
             int mX, mY;
             IEnumerable<Rectangle> gridGenerator;
             DrawMonitor(desktopMonitor, out mX, out mY, out gridGenerator);
@@ -799,10 +822,10 @@ namespace AmethystWindows.Services
             }
 
             // TODO check exception - An exception of type 'System.InvalidOperationException' occurred in WindowsBase.dll but was not handled in user code: 'The calling thread cannot access this object because a different thread owns it.'
-            if (!System.Windows.Application.Current.MainWindow.Equals(null))
-            {
-                _mainWindowViewModel.UpdateWindows();
-            }
+            // if (!System.Windows.Application.Current.MainWindow.Equals(null))
+            // {
+            _mainWindowViewModel.UpdateWindows();
+            // }
         }
 
         private DesktopWindow? GetWindowByHandlers(HWND hWnd, HMONITOR hMONITOR, VirtualDesktop? desktop)

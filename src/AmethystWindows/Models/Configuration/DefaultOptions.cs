@@ -35,22 +35,22 @@ namespace AmethystWindows.Models.Configuration
             new HotkeyOptions()
             {
                 Command = CommandHotkey.ChangeWindowFocusAntiClockwise.ToString(),
-                Keys = "Alt+Shift+J",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.ChangeWindowFocusClockwise.ToString(),
                 Keys = "Alt+Shift+K",
             },
             new HotkeyOptions()
             {
+                Command = CommandHotkey.ChangeWindowFocusClockwise.ToString(),
+                Keys = "Alt+Shift+J",
+            },
+            new HotkeyOptions()
+            {
                 Command = CommandHotkey.MoveFocusPreviousScreen.ToString(),
-                Keys = "Alt+Shift+P",
+                Keys = "Alt+Shift+Windows+P",
             },
             new HotkeyOptions()
             {
                 Command = CommandHotkey.MoveFocusNextScreen.ToString(),
-                Keys = "Alt+Shift+N",
+                Keys = "Alt+Shift+Windows+N",
             },
             new HotkeyOptions()
             {
