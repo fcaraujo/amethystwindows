@@ -555,7 +555,11 @@ namespace AmethystWindows.Services
                 if (ModelViewPropertiesDrawMonitor.Contains(propertyName) && x.Key != null)
                 {
                     _logger.Debug("» Debounce with last changed desktop monitor.");
-                    debounceDispatcher.Debounce(() => Draw(x));
+                    debounceDispatcher.Debounce(() =>
+                    {
+                        _logger.Debug("» Dispatcher is running and it should call Draw method.");
+                        Draw(x);
+                    });
                 }
                 else
                 {
