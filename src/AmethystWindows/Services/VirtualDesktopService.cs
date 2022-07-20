@@ -38,7 +38,7 @@ namespace AmethystWindows.Services
         /// <summary>
         /// Adds/removes virtual desktops according to the current settings
         /// </summary>
-        void SynchronizeDesktops();
+        void SynchronizeSpaces();
     }
 
     public class VirtualDesktopService : IVirtualDesktopService
@@ -96,7 +96,7 @@ namespace AmethystWindows.Services
         }
 
         /// <inheritdoc />
-        public void SynchronizeDesktops()
+        public void SynchronizeSpaces()
         {
             var currentDesktops = _virtualDesktopWrapper.GetAll();
             var currentLength = currentDesktops.Length;

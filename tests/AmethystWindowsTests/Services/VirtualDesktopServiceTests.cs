@@ -32,7 +32,7 @@ namespace AmethystWindowsTests.Services
                 });
 
             // Act
-            _sut.SynchronizeDesktops();
+            _sut.SynchronizeSpaces();
 
             // Assert
             // TODO implement here

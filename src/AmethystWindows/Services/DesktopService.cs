@@ -590,7 +590,7 @@ namespace AmethystWindows.Services
             {
                 _logger.Debug("» Virtual desktops.");
 
-                _virtualDesktopService.SynchronizeDesktops();
+                _virtualDesktopService.SynchronizeSpaces();
             }
         }
 

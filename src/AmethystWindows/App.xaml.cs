@@ -96,7 +96,7 @@ namespace AmethystWindows
                 desktopService.CollectWindows();
                 desktopService.Draw();
             });
-            virtualDesktopService.SynchronizeDesktops();
+            virtualDesktopService.SynchronizeSpaces();
 
             var autoStartService = _serviceProvider.GetService<IAutoStartService>() ?? throw new ArgumentNullException(nameof(AutoStartService));
             autoStartService.SetStartup();
