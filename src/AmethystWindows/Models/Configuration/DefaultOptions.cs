@@ -1,115 +1,119 @@
-﻿using AmethystWindows.Models.Enums;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
+using static AmethystWindows.Models.Enums.CommandHotkey;
+
+// TODO consider change mod2 = "Alt+Control+Shift" to really match amethyst
 namespace AmethystWindows.Models.Configuration
 {
     public static class DefaultOptions
     {
+        // TODO mod1 + M = (move) focus to main pane
+        // TODO mod1 + I = (info) display current layout
         public static readonly List<HotkeyOptions> Hotkeys = new()
         {
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.RotateLayoutClockwise.ToString(),
+                Command = RotateLayoutClockwise.ToString(),
                 Keys = "Alt+Shift+Space",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.RotateLayoutAntiClockwise.ToString(),
+                Command = RotateLayoutAntiClockwise.ToString(),
                 Keys = "Alt+Shift+Windows+Space",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.SetMainPane.ToString(),
+                Command = SetMainPane.ToString(),
                 Keys = "Alt+Shift+Enter",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.SwapFocusedAnticlockwise.ToString(),
-                Keys = "Alt+Shift+H",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.SwapFocusedClockwise.ToString(),
-                Keys = "Alt+Shift+L",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.ChangeWindowFocusAntiClockwise.ToString(),
-                Keys = "Alt+Shift+K",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.ChangeWindowFocusClockwise.ToString(),
-                Keys = "Alt+Shift+J",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.MoveFocusPreviousScreen.ToString(),
-                Keys = "Alt+Shift+Windows+P",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.MoveFocusNextScreen.ToString(),
-                Keys = "Alt+Shift+Windows+N",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.ExpandMainPane.ToString(),
-                Keys = "Alt+Shift+Windows+L",
-            },
-            new HotkeyOptions()
-            {
-                Command = CommandHotkey.Shrink.ToString(),
+                Command = SwapFocusedAnticlockwise.ToString(),
                 Keys = "Alt+Shift+Windows+H",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveFocusedPreviousScreen.ToString(),
+                Command = SwapFocusedClockwise.ToString(),
+                Keys = "Alt+Shift+Windows+L",
+            },
+            new HotkeyOptions
+            {
+                Command = ChangeWindowFocusAntiClockwise.ToString(),
+                Keys = "Alt+Shift+K",
+            },
+            new HotkeyOptions
+            {
+                Command = ChangeWindowFocusClockwise.ToString(),
+                Keys = "Alt+Shift+J",
+            },
+            new HotkeyOptions
+            {
+                Command = MoveFocusPreviousScreen.ToString(),
+                Keys = "Alt+Shift+Windows+P",
+            },
+            new HotkeyOptions
+            {
+                Command = MoveFocusNextScreen.ToString(),
+                Keys = "Alt+Shift+Windows+N",
+            },
+            new HotkeyOptions
+            {
+                Command = ExpandMainPane.ToString(),
+                Keys = "Alt+Shift+L",
+            },
+            new HotkeyOptions
+            {
+                Command = Shrink.ToString(),
+                Keys = "Alt+Shift+H",
+            },
+            new HotkeyOptions
+            {
+                Command = MoveFocusedPreviousScreen.ToString(),
                 Keys = "Alt+Shift+Windows+K",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveFocusedNextScreen.ToString(),
+                Command = MoveFocusedNextScreen.ToString(),
                 Keys = "Alt+Shift+Windows+J",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.Redraw.ToString(),
+                Command = Redraw.ToString(),
                 Keys = "Alt+Shift+Z",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveNextSpace.ToString(),
-                Keys = "Alt+Shift+Windows+Right",
+                Command = MoveNextSpace.ToString(),
+                Keys = "Alt+Control+Shift+Right",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MovePreviousSpace.ToString(),
-                Keys = "Alt+Shift+Windows+Left",
+                Command = MovePreviousSpace.ToString(),
+                Keys = "Alt+Control+Shift+Left",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveFocusedToSpace1.ToString(),
+                Command = MoveFocusedToSpace1.ToString(),
                 Keys = "Alt+Shift+Windows+1",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveFocusedToSpace2.ToString(),
+                Command = MoveFocusedToSpace2.ToString(),
                 Keys = "Alt+Shift+Windows+2",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveFocusedToSpace3.ToString(),
+                Command = MoveFocusedToSpace3.ToString(),
                 Keys = "Alt+Shift+Windows+3",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveFocusedToSpace4.ToString(),
+                Command = MoveFocusedToSpace4.ToString(),
                 Keys = "Alt+Shift+Windows+4",
             },
-            new HotkeyOptions()
+            new HotkeyOptions
             {
-                Command = CommandHotkey.MoveFocusedToSpace5.ToString(),
+                Command = MoveFocusedToSpace5.ToString(),
                 Keys = "Alt+Shift+Windows+5",
             },
         };
