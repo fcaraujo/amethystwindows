@@ -68,6 +68,7 @@ namespace AmethystWindows
             services.AddSingleton<IVirtualDesktopWrapper, VirtualDesktopWrapper>();
             services.AddSingleton<IVirtualDesktopService, VirtualDesktopService>();
             services.AddSingleton<IDesktopService, DesktopService>();
+            services.AddSingleton<INotificationService, NotificationService>();
             services.AddSingleton<HotkeyService>();
 
             return services;
@@ -100,6 +101,12 @@ namespace AmethystWindows
 
             var autoStartService = _serviceProvider.GetService<IAutoStartService>() ?? throw new ArgumentNullException(nameof(AutoStartService));
             autoStartService.SetStartup();
+
+            var notificationService = _serviceProvider.GetService<INotificationService>() ?? throw new ArgumentNullException(nameof(NotificationService));
+            notificationService.Show(
+                "Hello world!",
+                "AmethystWindows is running minimized and can be opened by clicking the task tray icon."
+            );
         }
     }
 }
