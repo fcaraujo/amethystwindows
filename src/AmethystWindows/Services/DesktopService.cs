@@ -65,8 +65,6 @@ namespace AmethystWindows.Services
             "MarginLeft",
             "ConfigurableFilters",
             "ConfigurableAdditions",
-            "DesktopMonitors",
-            "Windows",
         };
 
         private readonly string[] ModelViewPropertiesDrawMonitor = new string[] {
@@ -547,24 +545,44 @@ namespace AmethystWindows.Services
                 CollectWindows();
             }
 
+            // When some visual settings is changed
             if (ModelViewPropertiesDraw.Contains(propertyName))
             {
-                _logger.Debug("» Properties draw.");
-                var x = _mainWindowViewModel.LastChangedDesktopMonitor;
+                var monitor = _mainWindowViewModel.LastChangedDesktopMonitor;
 
-                if (ModelViewPropertiesDrawMonitor.Contains(propertyName) && x.Key != null)
+                if (monitor.Key != null)
                 {
-                    _logger.Debug("» Debounce with last changed desktop monitor.");
+                    _logger.Debug("» Properties draw with {MonitorKey} monitor.", monitor.Key);
+
                     debounceDispatcher.Debounce(() =>
                     {
                         _logger.Debug("» Dispatcher is running and it should call Draw method.");
-                        Draw(x);
+                        Draw(monitor);
                     });
                 }
                 else
                 {
+                    // TODO discover when this is actually called...
                     _logger.Debug("» Debounce without monitor.");
                     debounceDispatcher.Debounce(() => Draw());
+                }
+            }
+
+            // When a window is added/removed
+            // TODO prob this logic should just consider the "current monitor"
+            if (ModelViewPropertiesDrawMonitor.Contains(propertyName))
+            {
+                var monitor = _mainWindowViewModel.LastChangedDesktopMonitor;
+
+                if (monitor.Key != null)
+                {
+                    _logger.Debug("» Window added/removed for {MonitorKey} monitor.", monitor.Key);
+                    Draw(monitor);
+                }
+                else
+                {
+                    _logger.Warning("» Window added/removed BUT NO monitor found.");
+                    Draw();
                 }
             }
 
