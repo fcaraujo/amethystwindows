@@ -2,11 +2,11 @@
 {
     public enum Layout : ushort
     {
-        Horizontal = 0,
-        Vertical = 1,
-        HorizontalGrid = 2,
-        VertGrid = 3,
-        Monocle = 4,
+        Column = 0,
+        Row = 1,
+        Horizontal = 2,
+        Vertical = 3,
+        FullScreen = 4,
         Wide = 5,
         Tall = 6
     }

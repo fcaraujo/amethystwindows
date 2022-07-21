@@ -39,6 +39,7 @@ namespace AmethystWindows.Services
     public class DesktopService : IDesktopService
     {
         private readonly ILogger _logger;
+        private readonly INotificationService _notificationService;
         private readonly IVirtualDesktopService _virtualDesktopService;
         private readonly ISettingsService _settingsService;
         private readonly MainWindowViewModel _mainWindowViewModel;
@@ -80,7 +81,7 @@ namespace AmethystWindows.Services
             "MarginBottom",
             "MarginLeft",
             "VirtualDesktops",
-            "DesktopMonitors",
+            // "DesktopMonitors",
             "Additions",
             "Filters",
         };
@@ -93,11 +94,13 @@ namespace AmethystWindows.Services
         };
 
         public DesktopService(ILogger logger,
+                              INotificationService notificationService,
                               IVirtualDesktopService virtualDesktopService,
                               ISettingsService settingsService,
                               MainWindowViewModel mainWindowViewModel)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
             _virtualDesktopService = virtualDesktopService ?? throw new ArgumentNullException(nameof(virtualDesktopService));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
             _mainWindowViewModel = mainWindowViewModel ?? throw new ArgumentNullException(nameof(_mainWindowViewModel));
@@ -139,6 +142,7 @@ namespace AmethystWindows.Services
         }
 
         // Previously from *.GENERATOR
+        // TODO this apparently can be moved out of here...?
         public IEnumerable<Rectangle> GridGenerator(int mWidth, int mHeight, int windowsCount, int factor, Layout layout, int layoutPadding)
         {
             int i = 0;
@@ -151,168 +155,183 @@ namespace AmethystWindows.Services
             bool isFirstLine;
             switch (layout)
             {
-                case Layout.Horizontal:
-                    horizSize = mWidth / windowsCount;
-                    j = 0;
-                    for (i = 0; i < windowsCount; i++)
+                case Layout.Column:
                     {
-                        int lastPadding = i == windowsCount - 1 ? 0 : layoutPadding;
-                        yield return new Rectangle(i * horizSize, j, horizSize - lastPadding, mHeight);
+                        horizSize = mWidth / windowsCount;
+                        j = 0;
+                        for (i = 0; i < windowsCount; i++)
+                        {
+                            int lastPadding = i == windowsCount - 1 ? 0 : layoutPadding;
+                            yield return new Rectangle(i * horizSize, j, horizSize - lastPadding, mHeight);
+                        }
+                    }
+                    break;
+                case Layout.Row:
+                    {
+                        vertSize = mHeight / windowsCount;
+                        j = 0;
+                        for (i = 0; i < windowsCount; i++)
+                        {
+                            int lastPadding = i == windowsCount - 1 ? 0 : layoutPadding;
+                            yield return new Rectangle(j, i * vertSize, mWidth, vertSize - lastPadding);
+                        }
+                    }
+                    break;
+                case Layout.Horizontal:
+                    {
+                        horizStep = Math.Max((int)Math.Sqrt(windowsCount), 1);
+                        vertStep = Math.Max(windowsCount / horizStep, 1);
+                        tiles = horizStep * vertStep;
+                        horizSize = mWidth / horizStep;
+                        vertSize = mHeight / vertStep;
+                        isFirstLine = true;
+
+                        if (windowsCount != tiles || windowsCount == 3)
+                        {
+                            if (windowsCount == 3)
+                            {
+                                vertStep--;
+                                vertSize = mHeight / vertStep;
+                            }
+
+                            while (windowsCount > 0)
+                            {
+                                int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
+                                int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
+                                yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
+                                i++;
+                                if (i >= horizStep)
+                                {
+                                    i = 0;
+                                    j++;
+                                }
+                                if (j == vertStep - 1 && isFirstLine)
+                                {
+                                    horizStep++;
+                                    horizSize = mWidth / horizStep;
+                                    isFirstLine = false;
+                                }
+                                windowsCount--;
+                            }
+                        }
+                        else
+                        {
+                            while (windowsCount > 0)
+                            {
+                                int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
+                                int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
+                                yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
+                                i++;
+                                if (i >= horizStep)
+                                {
+                                    i = 0;
+                                    j++;
+                                }
+                                windowsCount--;
+                            }
+                        }
                     }
                     break;
                 case Layout.Vertical:
-                    vertSize = mHeight / windowsCount;
-                    j = 0;
-                    for (i = 0; i < windowsCount; i++)
                     {
-                        int lastPadding = i == windowsCount - 1 ? 0 : layoutPadding;
-                        yield return new Rectangle(j, i * vertSize, mWidth, vertSize - lastPadding);
-                    }
-                    break;
-                case Layout.HorizontalGrid:
-                    horizStep = Math.Max((int)Math.Sqrt(windowsCount), 1);
-                    vertStep = Math.Max(windowsCount / horizStep, 1);
-                    tiles = horizStep * vertStep;
-                    horizSize = mWidth / horizStep;
-                    vertSize = mHeight / vertStep;
-                    isFirstLine = true;
+                        vertStep = Math.Max((int)Math.Sqrt(windowsCount), 1);
+                        horizStep = Math.Max(windowsCount / vertStep, 1);
+                        tiles = horizStep * vertStep;
+                        vertSize = mHeight / vertStep;
+                        horizSize = mWidth / horizStep;
+                        isFirstLine = true;
 
-                    if (windowsCount != tiles || windowsCount == 3)
-                    {
-                        if (windowsCount == 3)
+                        if (windowsCount != tiles || windowsCount == 3)
                         {
-                            vertStep--;
-                            vertSize = mHeight / vertStep;
-                        }
-
-                        while (windowsCount > 0)
-                        {
-                            int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
-                            int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
-                            yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
-                            i++;
-                            if (i >= horizStep)
+                            if (windowsCount == 3)
                             {
-                                i = 0;
-                                j++;
-                            }
-                            if (j == vertStep - 1 && isFirstLine)
-                            {
-                                horizStep++;
+                                horizStep--;
                                 horizSize = mWidth / horizStep;
-                                isFirstLine = false;
                             }
-                            windowsCount--;
-                        }
-                    }
-                    else
-                    {
-                        while (windowsCount > 0)
-                        {
-                            int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
-                            int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
-                            yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
-                            i++;
-                            if (i >= horizStep)
+
+                            while (windowsCount > 0)
                             {
-                                i = 0;
+                                int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
+                                int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
+                                yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
                                 j++;
+                                if (j >= vertStep)
+                                {
+                                    j = 0;
+                                    i++;
+                                }
+                                if (i == horizStep - 1 && isFirstLine)
+                                {
+                                    vertStep++;
+                                    vertSize = mHeight / vertStep;
+                                    isFirstLine = false;
+                                }
+                                windowsCount--;
                             }
-                            windowsCount--;
+                        }
+                        else
+                        {
+                            while (windowsCount > 0)
+                            {
+                                int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
+                                int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
+                                yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
+                                j++;
+                                if (j >= vertStep)
+                                {
+                                    j = 0;
+                                    i++;
+                                }
+                                windowsCount--;
+                            }
                         }
                     }
                     break;
-                case Layout.VertGrid:
-                    vertStep = Math.Max((int)Math.Sqrt(windowsCount), 1);
-                    horizStep = Math.Max(windowsCount / vertStep, 1);
-                    tiles = horizStep * vertStep;
-                    vertSize = mHeight / vertStep;
-                    horizSize = mWidth / horizStep;
-                    isFirstLine = true;
-
-                    if (windowsCount != tiles || windowsCount == 3)
+                case Layout.FullScreen:
                     {
-                        if (windowsCount == 3)
+                        for (i = 0; i < windowsCount; i++)
                         {
-                            horizStep--;
-                            horizSize = mWidth / horizStep;
+                            yield return new Rectangle(0, 0, mWidth, mHeight);
                         }
-
-                        while (windowsCount > 0)
-                        {
-                            int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
-                            int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
-                            yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
-                            j++;
-                            if (j >= vertStep)
-                            {
-                                j = 0;
-                                i++;
-                            }
-                            if (i == horizStep - 1 && isFirstLine)
-                            {
-                                vertStep++;
-                                vertSize = mHeight / vertStep;
-                                isFirstLine = false;
-                            }
-                            windowsCount--;
-                        }
-                    }
-                    else
-                    {
-                        while (windowsCount > 0)
-                        {
-                            int lastPaddingI = i == horizStep - 1 ? 0 : layoutPadding;
-                            int lastPaddingJ = j == vertStep - 1 ? 0 : layoutPadding;
-                            yield return new Rectangle(i * horizSize, j * vertSize, horizSize - lastPaddingI, vertSize - lastPaddingJ);
-                            j++;
-                            if (j >= vertStep)
-                            {
-                                j = 0;
-                                i++;
-                            }
-                            windowsCount--;
-                        }
-                    }
-                    break;
-                case Layout.Monocle:
-                    for (i = 0; i < windowsCount; i++)
-                    {
-                        yield return new Rectangle(0, 0, mWidth, mHeight);
                     }
                     break;
                 case Layout.Wide:
-                    if (windowsCount == 1) yield return new Rectangle(0, 0, mWidth, mHeight);
-                    else
                     {
-                        int size = mWidth / (windowsCount - 1);
-                        for (i = 0; i < windowsCount - 1; i++)
+                        if (windowsCount == 1) yield return new Rectangle(0, 0, mWidth, mHeight);
+                        else
                         {
-                            int lastPaddingI = windowsCount == 1 ? 0 : layoutPadding;
-                            int lastPaddingJ = i == windowsCount - 2 ? 0 : layoutPadding;
+                            int size = mWidth / (windowsCount - 1);
+                            for (i = 0; i < windowsCount - 1; i++)
+                            {
+                                int lastPaddingI = windowsCount == 1 ? 0 : layoutPadding;
+                                int lastPaddingJ = i == windowsCount - 2 ? 0 : layoutPadding;
 
-                            if (i == 0) yield return new Rectangle(0, 0, mWidth, mHeight / 2 + factor * _mainWindowViewModel.Step - lastPaddingI / 2);
-                            yield return new Rectangle(i * size, mHeight / 2 + factor * _mainWindowViewModel.Step + lastPaddingI / 2, size - lastPaddingJ, mHeight / 2 - factor * _mainWindowViewModel.Step - lastPaddingI / 2);
+                                if (i == 0) yield return new Rectangle(0, 0, mWidth, mHeight / 2 + factor * _mainWindowViewModel.Step - lastPaddingI / 2);
+                                yield return new Rectangle(i * size, mHeight / 2 + factor * _mainWindowViewModel.Step + lastPaddingI / 2, size - lastPaddingJ, mHeight / 2 - factor * _mainWindowViewModel.Step - lastPaddingI / 2);
+                            }
                         }
                     }
                     break;
                 case Layout.Tall:
-                    if (windowsCount == 1) yield return new Rectangle(0, 0, mWidth, mHeight);
-                    else
                     {
-                        int size = mHeight / (windowsCount - 1);
-                        for (i = 0; i < windowsCount - 1; i++)
+                        if (windowsCount == 1) yield return new Rectangle(0, 0, mWidth, mHeight);
+                        else
                         {
-                            int lastPaddingI = i == windowsCount - 2 ? 0 : layoutPadding;
-                            int lastPaddingJ = windowsCount == 1 ? 0 : layoutPadding;
+                            int size = mHeight / (windowsCount - 1);
+                            for (i = 0; i < windowsCount - 1; i++)
+                            {
+                                int lastPaddingI = i == windowsCount - 2 ? 0 : layoutPadding;
+                                int lastPaddingJ = windowsCount == 1 ? 0 : layoutPadding;
 
-                            if (i == 0) yield return new Rectangle(0, 0, mWidth / 2 + factor * _mainWindowViewModel.Step - lastPaddingJ / 2, mHeight);
-                            yield return new Rectangle(mWidth / 2 + factor * _mainWindowViewModel.Step + lastPaddingJ / 2, i * size, mWidth / 2 - factor * _mainWindowViewModel.Step - lastPaddingJ / 2, size - lastPaddingI);
+                                if (i == 0) yield return new Rectangle(0, 0, mWidth / 2 + factor * _mainWindowViewModel.Step - lastPaddingJ / 2, mHeight);
+                                yield return new Rectangle(mWidth / 2 + factor * _mainWindowViewModel.Step + lastPaddingJ / 2, i * size, mWidth / 2 - factor * _mainWindowViewModel.Step - lastPaddingJ / 2, size - lastPaddingI);
+                            }
                         }
                     }
                     break;
             }
         }
+
         // Previously from *.WINDOW
         public void Dispatch(CommandHotkey command)
         {

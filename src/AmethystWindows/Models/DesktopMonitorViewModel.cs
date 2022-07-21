@@ -1,4 +1,7 @@
-﻿using AmethystWindows.Models.Enums;
+﻿using AmethystWindows.DependencyInjection;
+using AmethystWindows.Models.Enums;
+using AmethystWindows.Services;
+using DebounceThrottle;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,6 +13,8 @@ namespace AmethystWindows.Models
 {
     public class DesktopMonitorViewModel : INotifyPropertyChanged
     {
+        private DebounceDispatcher _debounceDispatcher = new DebounceDispatcher(666);
+
         private HMONITOR _monitor;
         private VirtualDesktop? _virtualDesktop;
         private int _factor;
@@ -76,9 +81,11 @@ namespace AmethystWindows.Models
             {
                 case CommandHotkey.RotateLayoutClockwise:
                     this.RotateLayoutClockwise();
+                    this.DebounceLayoutNotification("Rotated layout clockwise");
                     break;
                 case CommandHotkey.RotateLayoutAntiClockwise:
                     this.RotateLayoutAntiClockwise();
+                    this.DebounceLayoutNotification("Rotated layout anti clockwise");
                     break;
                 case CommandHotkey.ExpandMainPane:
                     this.Expand();
@@ -89,6 +96,18 @@ namespace AmethystWindows.Models
                 default:
                     break;
             }
+        }
+
+        private void DebounceLayoutNotification(string title)
+        {
+            // TODO check dev experimental DisplayLayoutOnChange config or return
+
+            _debounceDispatcher.Debounce(() =>
+            {
+                var layout = this.Layout;
+                var notificationService = DIContainer.GetService<INotificationService>();
+                notificationService.Show(title, $"Current: {layout}");
+            });
         }
 
         public override bool Equals(object? obj)
@@ -124,7 +143,7 @@ namespace AmethystWindows.Models
             var layouts = Enum.GetValues(typeof(Layout)).Cast<Layout>();
             if (Layout == layouts.Max())
             {
-                Layout = Layout.Horizontal;
+                Layout = Layout.Column;
             }
             else
             {
