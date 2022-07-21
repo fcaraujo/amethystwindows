@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Serilog;
 
 namespace AmethystWindows.Services
 {
@@ -12,8 +13,23 @@ namespace AmethystWindows.Services
     {
         private const int DefaultExpirationInSeconds = 5;
 
-        public void Show(string title, string message, int? expirationInSeconds = null, bool? silent = true)
+        private readonly ILogger _logger;
+
+        public NotificationService(ILogger logger)
         {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public void Show(string title,
+                         string message,
+                         int? expirationInSeconds = null,
+                         bool? silent = true)
+        {
+            _logger.Information("{Method} notification: {Title} - {Message}.",
+                                nameof(Show),
+                                title,
+                                message);
+
             var audio = new ToastAudio
             {
                 Silent = silent.GetValueOrDefault()
