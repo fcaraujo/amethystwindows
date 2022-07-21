@@ -105,7 +105,7 @@ namespace AmethystWindows
             var notificationService = _serviceProvider.GetService<INotificationService>() ?? throw new ArgumentNullException(nameof(NotificationService));
             notificationService.Show(
                 "Hello world!",
-                "AmethystWindows is running minimized and can be opened by clicking the task tray icon."
+                "AmethystWindows is running minimized and it can be opened by clicking on its icon at the system task."
             );
         }
     }
