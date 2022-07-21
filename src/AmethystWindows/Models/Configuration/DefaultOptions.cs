@@ -116,6 +116,16 @@ namespace AmethystWindows.Models.Configuration
                 Command = MoveFocusedToSpace5.ToString(),
                 Keys = "Alt+Shift+Windows+5",
             },
+            new HotkeyOptions
+            {
+                Command = DisplayCurrentInfo.ToString(),
+                Keys = "Alt+Shift+I",
+            },
+            new HotkeyOptions
+            {
+                Command = MoveFocusMainWindow.ToString(),
+                Keys = "Alt+Shift+M",
+            }
         };
     }
 }

@@ -225,12 +225,16 @@
                                 <local:HotkeyEditorControl ViewModelHotkey="{ Binding Hotkeys[4] }" Command="SwapFocusedClockwise" Width="220"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="20">
-                                <TextBlock Width="300" VerticalAlignment="Center">Swap Focus Counterclockwise</TextBlock>
+                                <TextBlock Width="300" VerticalAlignment="Center">Move Focus Counter Clockwise</TextBlock>
                                 <local:HotkeyEditorControl ViewModelHotkey="{ Binding Hotkeys[5] }" Command="ChangeWindowFocusAntiClockwise" Width="220"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="20">
                                 <TextBlock Width="300" VerticalAlignment="Center">Swap Focus Clockwise</TextBlock>
                                 <local:HotkeyEditorControl ViewModelHotkey="{ Binding Hotkeys[6] }" Command="ChangeWindowFocusClockwise" Width="220"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="20">
+                                <TextBlock Width="300" VerticalAlignment="Center">Move Focus to Main Window</TextBlock>
+                                <local:HotkeyEditorControl ViewModelHotkey="{ Binding Hotkeys[22] }" Command="MoveFocusMainWindow" Width="220"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="20">
                                 <TextBlock Width="300" VerticalAlignment="Center">Move Focus Previous Screen</TextBlock>
@@ -287,6 +291,10 @@
                             <StackPanel Orientation="Horizontal" Margin="20">
                                 <TextBlock Width="300" VerticalAlignment="Center">Move Focused Window To Space 5</TextBlock>
                                 <local:HotkeyEditorControl ViewModelHotkey="{ Binding Hotkeys[20] }" Command="MoveFocusedToSpace5" Width="220"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="20">
+                                <TextBlock Width="300" VerticalAlignment="Center">Display current information</TextBlock>
+                                <local:HotkeyEditorControl ViewModelHotkey="{ Binding Hotkeys[21] }" Command="DisplayCurrentInfo" Width="220"/>
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>

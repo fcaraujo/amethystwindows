@@ -45,11 +45,6 @@ namespace AmethystWindows.Services
                     hotkeyId = wParam.ToInt64();
                     command = (CommandHotkey)hotkeyId;
 
-                    var foregroundWindow = User32.GetForegroundWindow();
-                    var currentMonitor = User32.MonitorFromWindow(foregroundWindow, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
-                    var currentVirtualDesktop = _virtualDesktopWrapper.GetCurrent();
-                    var currentPair = new Pair<VirtualDesktop, HMONITOR>(currentVirtualDesktop, currentMonitor);
-                    var viewModelDesktopMonitor = _mainWindowVM.DesktopMonitors[currentPair];
 
                     switch (command)
                     {
@@ -58,7 +53,14 @@ namespace AmethystWindows.Services
                         case CommandHotkey.RotateLayoutAntiClockwise:
                         case CommandHotkey.ExpandMainPane:
                         case CommandHotkey.Shrink:
-                            viewModelDesktopMonitor?.Dispatch(command);
+                            {
+                                var foregroundWindow = User32.GetForegroundWindow();
+                                var currentMonitor = User32.MonitorFromWindow(foregroundWindow, User32.MonitorFlags.MONITOR_DEFAULTTONEAREST);
+                                var currentVirtualDesktop = _virtualDesktopWrapper.GetCurrent();
+                                var currentPair = new Pair<VirtualDesktop, HMONITOR>(currentVirtualDesktop, currentMonitor);
+                                var viewModelDesktopMonitor = _mainWindowVM.DesktopMonitors[currentPair];
+                                viewModelDesktopMonitor?.Dispatch(command);
+                            }
                             break;
 
                         // Windows Management operations
@@ -79,11 +81,13 @@ namespace AmethystWindows.Services
                         case CommandHotkey.MoveFocusedNextScreen:
                         case CommandHotkey.MoveNextSpace:
                         case CommandHotkey.MovePreviousSpace:
+                        case CommandHotkey.DisplayCurrentInfo:
                             _desktopService.Dispatch(command);
                             break;
 
                         case CommandHotkey.None:
                         default:
+                            _logger.Warning("Command hotkey {Command} currently not implemented.", command);
                             break;
                     }
                 }

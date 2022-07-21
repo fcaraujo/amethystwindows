@@ -398,11 +398,29 @@ namespace AmethystWindows.Services
                 case CommandHotkey.MoveFocusedNextScreen:
                     MoveWindowNextScreen(findWindow);
                     break;
+                // default => alt+shift+I
+                case CommandHotkey.DisplayCurrentInfo:
+                    DisplayCurrentInfo(currentVirtualDesktop);
+                    break;
                 // empty action
                 case CommandHotkey.None:
                 default:
                     break;
             }
+        }
+
+        private void DisplayCurrentInfo(VirtualDesktop? currentVirtualDesktop)
+        {
+            if (currentVirtualDesktop is null)
+                return;
+
+            var x = _mainWindowViewModel.DesktopMonitors.FirstOrDefault(x => x.VirtualDesktop?.Id == currentVirtualDesktop?.Id);
+            if (x is null)
+                return;
+
+            var layout = x.Layout;
+
+            _notificationService.Show("Current information", $"Layout: {layout}");
         }
 
         public void RemoveWindow(DesktopWindow desktopWindow)
